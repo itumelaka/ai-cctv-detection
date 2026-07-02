@@ -133,3 +133,80 @@ hikvision-ai-cctv/
 5. Bina prototype AI detection.
 6. Tambah alert dan event log.
 7. Review performance sebelum tambah kamera lain.
+
+
+# ITU AI CCTV
+
+Backend AI CCTV detection project for ITU Melaka using existing Hikvision CCTV infrastructure.
+
+This project focuses on building a safe backend foundation first before adding AI detection models.
+
+## Current Status
+
+Completed:
+
+- FastAPI backend setup
+- Health check endpoint
+- RTSP camera test endpoint
+- CCTV snapshot endpoint
+- Local `.env` configuration
+- RTSP stream tested successfully
+- Snapshot image tested successfully
+- CCTV sub-stream configured to H.264 for OpenCV compatibility
+
+## Current Working Camera Test
+
+Camera Host : 192.168.40.21  
+Channel     : 102  
+Stream      : Sub-stream  
+Codec       : H.264  
+Resolution  : 640x360  
+RTSP Port   : 554  
+
+Real CCTV usernames and passwords must never be committed to GitHub.
+
+## Backend Endpoints
+
+### Health Check
+
+GET /health
+
+Returns backend health status.
+
+### Camera RTSP Test
+
+GET /cameras/test
+
+Tests whether the backend can connect to the configured RTSP stream and read a frame.
+
+### Camera Snapshot
+
+GET /cameras/snapshot
+
+Captures one CCTV frame and returns it as a JPEG image.
+
+## Important CCTV Notes
+
+The camera main stream originally used H.265 / HEVC at high resolution. OpenCV on Windows produced HEVC decode errors such as:
+
+- PPS id out of range
+- VPS does not exist
+- SPS does not exist
+- Stream timeout triggered
+
+The stable configuration is to use the CCTV sub-stream:
+
+Video Encoding : H.264  
+Resolution     : 640x360  
+Bitrate        : 512 Kbps  
+Channel        : 102  
+
+This is more suitable for AI detection because it is lighter, faster, and more stable.
+
+## Local Development
+
+Create and activate virtual environment:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
