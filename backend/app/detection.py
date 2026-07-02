@@ -1,4 +1,5 @@
 from functools import lru_cache
+import cv2
 from ultralytics import YOLO
 from app.camera import capture_frame
 
@@ -10,10 +11,7 @@ def get_model():
     return YOLO(MODEL_NAME)
 
 
-def run_yolo_detection() -> dict:
-    frame = capture_frame()
-    height, width = frame.shape[:2]
-
+def detect_objects(frame):
     model = get_model()
 
     results = model.predict(
@@ -46,6 +44,14 @@ def run_yolo_detection() -> dict:
                 }
             })
 
+    return detections
+
+
+def run_yolo_detection() -> dict:
+    frame = capture_frame()
+    height, width = frame.shape[:2]
+    detections = detect_objects(frame)
+
     return {
         "status": "ok",
         "model": MODEL_NAME,
@@ -56,3 +62,38 @@ def run_yolo_detection() -> dict:
         "detections_count": len(detections),
         "detections": detections
     }
+
+
+def run_yolo_snapshot_jpeg() -> bytes:
+    frame = capture_frame()
+    detections = detect_objects(frame)
+
+    for detection in detections:
+        box = detection["box"]
+        class_name = detection["class_name"]
+        confidence = detection["confidence"]
+
+        x1 = int(box["x1"])
+        y1 = int(box["y1"])
+        x2 = int(box["x2"])
+        y2 = int(box["y2"])
+
+        label = f"{class_name} {confidence:.2f}"
+
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(
+            frame,
+            label,
+            (x1, max(y1 - 10, 20)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2
+        )
+
+    success, buffer = cv2.imencode(".jpg", frame)
+
+    if not success:
+        raise RuntimeError("Failed to encode YOLO snapshot as JPEG.")
+
+    return buffer.tobytes()

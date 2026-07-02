@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from app.camera import capture_frame
-from app.detection import run_yolo_detection
+from app.detection import run_yolo_detection, run_yolo_snapshot_jpeg
 
 router = APIRouter(
     prefix="/detections",
@@ -45,4 +46,26 @@ def yolo_detection():
         raise HTTPException(
             status_code=500,
             detail=f"YOLO detection failed: {error}"
+        )
+
+
+@router.get("/yolo/snapshot")
+def yolo_snapshot():
+    try:
+        image_bytes = run_yolo_snapshot_jpeg()
+
+        return Response(
+            content=image_bytes,
+            media_type="image/jpeg"
+        )
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error)
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"YOLO snapshot failed: {error}"
         )
