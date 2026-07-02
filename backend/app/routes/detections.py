@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from app.camera import capture_frame
+from app.detection import run_yolo_detection
 
 router = APIRouter(
     prefix="/detections",
     tags=["Detections"]
 )
+
 
 @router.get("/test")
 def test_detection():
@@ -26,4 +28,21 @@ def test_detection():
         raise HTTPException(
             status_code=503,
             detail=str(error)
+        )
+
+
+@router.get("/yolo")
+def yolo_detection():
+    try:
+        return run_yolo_detection()
+
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error)
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"YOLO detection failed: {error}"
         )
