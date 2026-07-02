@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.routes.health import router as health_router
 from app.routes.cameras import router as cameras_router
+from app.routes.detections import router as detections_router
 
 app = FastAPI(
     title="ITU AI CCTV Backend",
@@ -10,6 +11,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(cameras_router)
+app.include_router(detections_router)
 
 @app.get("/")
 def root():
