@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Settings:
     app_name: str = os.getenv("APP_NAME", "ITU AI CCTV Backend")
     app_env: str = os.getenv("APP_ENV", "development")
@@ -15,6 +16,7 @@ class Settings:
     cctv_channel: str = os.getenv("CCTV_CHANNEL", "101")
 
     yolo_confidence: float = float(os.getenv("YOLO_CONFIDENCE", "0.35"))
+    person_event_cooldown_seconds: int = int(os.getenv("PERSON_EVENT_COOLDOWN_SECONDS", "300"))
 
     @property
     def rtsp_url(self) -> str:
@@ -35,5 +37,6 @@ class Settings:
             f"@{self.cctv_host}:{self.cctv_port}"
             f"/Streaming/Channels/{self.cctv_channel}"
         )
+
 
 settings = Settings()
