@@ -13,7 +13,7 @@ $CandidatePaths = @(
     "C:\nssm\nssm.exe",
     "C:\nssm\win64\nssm.exe",
     "C:\tools\nssm\nssm.exe",
-    (Get-Command nssm -ErrorAction SilentlyContinue)?.Source
+    (Get-Command nssm -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
 )
 foreach ($path in $CandidatePaths) {
     if ($path -and (Test-Path $path)) { $NssmExe = $path; break }

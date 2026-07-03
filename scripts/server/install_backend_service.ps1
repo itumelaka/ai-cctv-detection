@@ -12,7 +12,7 @@
 
 .NOTES
     Run this script as Administrator.
-    Run from any location — it detects the project root automatically.
+    Run from any location - it detects the project root automatically.
 #>
 
 Set-StrictMode -Version Latest
@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 # --- Paths ---
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..\..")).Path
+$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 $BackendDir  = Join-Path $ProjectRoot "backend"
 $ServiceName = "ITUAICCTVBackend"
 $DisplayName = "ITU AI CCTV Backend"
@@ -40,7 +40,7 @@ if (-not (Test-Path $PythonExe)) {
     $PythonExe = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 }
 if (-not (Test-Path $PythonExe)) {
-    $PythonExe = (Get-Command python -ErrorAction SilentlyContinue)?.Source
+    $PythonExe = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
 }
 if (-not $PythonExe) {
     Write-Error "Python not found. Install Python 3.12 and create a virtual environment first."
@@ -54,7 +54,7 @@ $CandidatePaths = @(
     "C:\nssm\nssm.exe",
     "C:\nssm\win64\nssm.exe",
     "C:\tools\nssm\nssm.exe",
-    (Get-Command nssm -ErrorAction SilentlyContinue)?.Source
+    (Get-Command nssm -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
 )
 foreach ($path in $CandidatePaths) {
     if ($path -and (Test-Path $path)) { $NssmExe = $path; break }

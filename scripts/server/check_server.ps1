@@ -37,7 +37,7 @@ try {
 # 4. Dashboard summary
 try {
     $summary = Invoke-RestMethod -Uri "$BaseUrl/dashboard/summary" -TimeoutSec 5
-    Write-Host "GET /dashboard   : ok — cameras $($summary.cameras_enabled)/$($summary.cameras_total) enabled, events $($summary.events.total_events)" -ForegroundColor Green
+    Write-Host "GET /dashboard   : ok - cameras $($summary.cameras_enabled)/$($summary.cameras_total) enabled, events $($summary.events.total_events)" -ForegroundColor Green
 } catch {
     Write-Host "GET /dashboard   : Failed" -ForegroundColor Red
 }
@@ -73,7 +73,7 @@ if ($lanIp) {
 
 # 8. Monitor log
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..\..")).Path
+$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 $LogFile     = Join-Path $ProjectRoot "backend\data\task-logs\monitor_person_all.log"
 
 if (Test-Path $LogFile) {

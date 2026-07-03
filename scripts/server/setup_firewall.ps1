@@ -28,7 +28,7 @@ if ($existing) {
     Remove-NetFirewallRule -DisplayName $RuleName
 }
 
-# Create new inbound rule — LAN profile only (Private), not Public
+# Create new inbound rule - LAN profile only (Private), not Public
 New-NetFirewallRule `
     -DisplayName $RuleName `
     -Description $Description `
@@ -42,7 +42,7 @@ New-NetFirewallRule `
 Write-Host "Firewall rule created:" -ForegroundColor Green
 Write-Host "  Name    : $RuleName"
 Write-Host "  Port    : $Port (TCP Inbound)"
-Write-Host "  Profile : Private (LAN only — not Public/internet)"
+Write-Host "  Profile : Private (LAN only - not Public/internet)"
 Write-Host ""
 Write-Host "Verify with:"
 Write-Host "  Get-NetFirewallRule -DisplayName '$RuleName' | Format-List"

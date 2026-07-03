@@ -4,12 +4,27 @@
 ======================================================
 
 Baca dulu sebelum start:
-- Semua langkah ni mesti dibuat dalam Windows Server (bilik server)
-- Guna PowerShell sebagai Administrator
+- Semua langkah ni dibuat dalam Windows Server (bilik server)
+- Guna PowerShell (Windows PowerShell 5.1) sebagai Administrator
 - Kena ada internet untuk download
+- NOTA: Windows Server selalunya TAKDE 'winget'. Guide ni guna
+  cara download manual supaya selamat pada mana-mana server.
 
 ======================================================
-LANGKAH 1 — BUKA POWERSHELL SEBAGAI ADMINISTRATOR
+LANGKAH 0 - SEMAK APA YANG DAH ADA
+======================================================
+
+Dalam PowerShell (Run as Administrator), semak satu persatu:
+
+  python --version
+  git --version
+  winget --version
+
+Kalau keluar "not recognized" = benda tu belum install.
+Pada Windows Server bersih, biasanya ketiga-tiganya belum ada.
+
+======================================================
+LANGKAH 1 - BUKA POWERSHELL SEBAGAI ADMINISTRATOR
 ======================================================
 
 1. Klik Start
@@ -18,66 +33,67 @@ LANGKAH 1 — BUKA POWERSHELL SEBAGAI ADMINISTRATOR
 4. Klik Yes
 
 ======================================================
-LANGKAH 2 — INSTALL PYTHON 3.12
+LANGKAH 2 - INSTALL PYTHON 3.12 (MANUAL)
 ======================================================
 
-Dalam PowerShell, copy paste arahan ni satu persatu:
+Download manual (winget selalu takde pada Server):
+  https://www.python.org/downloads/
+  Pilih Python 3.12.x (Windows installer 64-bit)
 
-  winget install Python.Python.3.12
+Masa install:
+  - TICK "Add python.exe to PATH" (bawah sekali) - PENTING
+  - Klik "Install Now"
+  - Selepas siap, kalau ada butang "Disable path length limit", klik ia
 
-Tunggu sampai habis. Kemudian semak:
+Selepas install, TUTUP PowerShell, buka balik sebagai Administrator
+(supaya PATH dikemaskini). Kemudian semak:
 
   python --version
 
 Kena nampak: Python 3.12.x
 
-Kalau winget tak ada, download manual:
-  https://www.python.org/downloads/
-  Pilih Python 3.12.x (Windows installer 64-bit)
-  PENTING: Tick "Add Python to PATH" masa install
-
 ======================================================
-LANGKAH 3 — INSTALL GIT
+LANGKAH 3 - INSTALL GIT (MANUAL)
 ======================================================
 
-  winget install Git.Git
+Download: https://git-scm.com/download/win
+Run installer, klik Next sampai habis (default OK), Install, Finish.
 
-Atau download manual: https://git-scm.com/download/win
+TUTUP PowerShell, buka balik sebagai Administrator. Semak:
 
-Semak:
   git --version
 
 ======================================================
-LANGKAH 4 — DOWNLOAD NSSM (untuk run backend sebagai service)
+LANGKAH 4 - DOWNLOAD NSSM (untuk run backend sebagai service)
 ======================================================
 
 1. Pergi ke: https://nssm.cc/download
+   (Kalau laman 503/down, cuba link terus: https://nssm.cc/release/nssm-2.24.zip)
 2. Download versi terbaru (contoh: nssm-2.24.zip)
 3. Extract zip
 4. Masuk folder win64
-5. Copy fail nssm.exe
-6. Paste kat: C:\nssm\nssm.exe
-   (Buat folder C:\nssm kalau belum ada)
+5. Copy fail nssm.exe ke: C:\nssm\nssm.exe
 
-Semak dalam PowerShell:
-  C:\nssm\nssm.exe version
+Cara cepat dalam PowerShell (tukar path ikut lokasi download sebenar):
+
+  New-Item -ItemType Directory -Force -Path C:\nssm
+  Copy-Item "D:\Downloads\nssm-2.24\nssm-2.24\win64\nssm.exe" "C:\nssm\nssm.exe"
+
+Semak:
+  C:\nssm\nssm.exe version   (patut nampak NSSM 2.24 64-bit)
 
 ======================================================
-LANGKAH 5 — CLONE REPO PROJEK
+LANGKAH 5 - CLONE REPO PROJEK
 ======================================================
 
   git clone https://github.com/itumelaka/ituaicctv.git C:\ituaicctv
-
-Tunggu siap. Kemudian masuk folder:
-
   cd C:\ituaicctv
 
 ======================================================
-LANGKAH 6 — SETUP PYTHON ENVIRONMENT
+LANGKAH 6 - SETUP PYTHON ENVIRONMENT
 ======================================================
 
   python -m venv .venv312
-
   .\.venv312\Scripts\Activate.ps1
 
 Kalau ada error "Execution Policy":
@@ -85,19 +101,27 @@ Kalau ada error "Execution Policy":
   (tekan Y, Enter)
   Kemudian cuba lagi: .\.venv312\Scripts\Activate.ps1
 
-Install pakej:
+Bila berjaya, ada (.venv312) di depan baris PowerShell.
+
+Upgrade pip, kemudian install pakej:
+  python -m pip install --upgrade pip
   pip install -r backend\requirements.txt
 
-Proses ini ambil masa 5-15 minit. Tunggu habis.
+NOTA: 'torch' + 'ultralytics' besar. Proses ini boleh ambil
+10-20 minit. Jangan tutup PowerShell walaupun nampak tersangkut.
+Kalau timeout: pip install -r backend\requirements.txt --timeout 120
+
+Semak semua pakej penting berjaya:
+  python -c "import torch, ultralytics, cv2, fastapi; print('OK semua import jadi')"
 
 ======================================================
-LANGKAH 7 — SETUP FAIL .ENV (KONFIGURASI)
+LANGKAH 7 - SETUP FAIL .ENV (KONFIGURASI)
 ======================================================
 
   Copy-Item backend\.env.example backend\.env
   notepad backend\.env
 
-Isi maklumat berikut dalam Notepad yang terbuka:
+Isi ikut field yang ada dalam fail (contoh nilai):
 
   APP_NAME=ITU AI CCTV Backend
   APP_ENV=production
@@ -116,105 +140,142 @@ Isi maklumat berikut dalam Notepad yang terbuka:
 
 Simpan (Ctrl+S) dan tutup Notepad.
 
+-- Cara dapat TELEGRAM_CHAT_ID --
+1. Buka chat dengan bot anda dalam Telegram, tekan Start, hantar apa-apa mesej.
+   (Bot memang TIDAK auto-reply - itu normal. Dia cuma hantar alert.)
+2. Buka browser, pergi (tukar <TOKEN>; perkataan 'bot' WAJIB di depan token):
+     https://api.telegram.org/bot<TOKEN>/getUpdates
+3. Cari "chat":{"id":XXXXXXXX, ... "type":"private"} - nombor id tu = chat id.
+   Kalau result kosong ([]), hantar mesej BARU dulu, kemudian refresh URL.
+   Untuk GROUP: add bot ke group, hantar mesej, id group ada tanda negatif (-100...).
+
 ======================================================
-LANGKAH 8 — TEST BACKEND DULU (OPTIONAL TAPI DISYORKAN)
+LANGKAH 8 - TEST BACKEND DULU (DISYORKAN)
 ======================================================
 
   cd backend
   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 Buka browser dalam server: http://localhost:8000/health
-Kena nampak: {"status":"ok"}
+Kena nampak: {"status":"ok","service":"ituaicctv-backend"}
 
-Kalau OK, tekan Ctrl+C untuk stop. Teruskan ke langkah 9.
-Kalau error, semak semula fail .env.
-
+Kalau OK, tekan Ctrl+C untuk stop, kemudian:
   cd C:\ituaicctv
 
 ======================================================
-LANGKAH 9 — INSTALL BACKEND SEBAGAI WINDOWS SERVICE
+LANGKAH 9 - INSTALL BACKEND SEBAGAI WINDOWS SERVICE
 ======================================================
 
   .\scripts\server\install_backend_service.ps1
 
-Tunggu siap. Patut nampak "Service is running."
+Patut nampak "Service is running." (hijau).
+Kalau nampak "SERVICE_START_PENDING", tunggu beberapa saat
+(backend lambat sikit warm-up sebab import torch), kemudian semak:
+  Get-Service -Name ITUAICCTVBackend
+  Invoke-RestMethod http://localhost:8000/health
 
 ======================================================
-LANGKAH 10 — SETUP FIREWALL (BUKA PORT 8000 UNTUK LAN)
+LANGKAH 10 - SETUP FIREWALL (BUKA PORT 8000 UNTUK LAN)
 ======================================================
 
   .\scripts\server\setup_firewall.ps1
 
-Script ni akan tunjuk IP server. Catat IP tu, contoh: 192.168.1.x
+Script tunjuk IP server. Catat IP tu (contoh 192.168.1.x).
+
+PENTING (server dua NIC / dual-NIC):
+- Port 8000 hanya terbuka pada adapter berprofil "Private".
+- Semak profil setiap adapter:
+    Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory
+- Pastikan adapter LAN (yang PC operator guna) berprofil Private.
+- Adapter lain (contoh GOVNET) biar Public supaya backend TIDAK terdedah di situ.
 
 ======================================================
-LANGKAH 11 — SETUP TASK SCHEDULER (MONITOR AUTOMATIK)
+LANGKAH 11 - SETUP TASK SCHEDULER (MONITOR AUTOMATIK)
 ======================================================
 
   .\scripts\server\setup_task_scheduler.ps1
 
+Task didaftar dalam keadaan DISABLED (sengaja, untuk keselamatan).
+
 ======================================================
-LANGKAH 12 — SEMAK SEMUA BERJALAN DENGAN BAIK
+LANGKAH 12 - SEMAK SEMUA BERJALAN DENGAN BAIK
 ======================================================
 
   .\scripts\server\check_server.ps1
 
-Kena nampak semua "Running" atau "OK" dengan warna hijau.
+Kena nampak Service Running, Port Listening, /health ok,
+/dashboard ok, Firewall True. (Task Scheduler Disabled = normal
+setakat ni. Monitor log "Not found" = normal sebelum task enable.)
 
 ======================================================
-LANGKAH 13 — ENABLE MONITORING (BILA READY)
+LANGKAH 13 - ENABLE MONITORING (BILA READY)
 ======================================================
 
   Enable-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
 
 ======================================================
-LANGKAH 14 — BUKA DASHBOARD
+LANGKAH 14 - BUKA DASHBOARD
 ======================================================
 
 Dari mana-mana browser dalam LAN:
-
   https://itumelaka.github.io/ituaicctv/
 
 Set "Backend URL" kepada IP server yang dicatat tadi:
-
   http://192.168.x.x:8000
 
-Klik "Save & Connect".
-
-Dashboard akan load data dari server secara automatik.
+Klik "Save & Connect". Dashboard load data automatik.
 
 ======================================================
 SIAP!
 ======================================================
 
 Selepas ini berjalan:
-- Backend run sendiri bila server start semula
+- Backend run sendiri bila server start semula (SERVICE_AUTO_START)
 - Monitor kamera berjalan setiap 5 minit secara automatik
-- Alert Telegram akan dihantar bila person detected
-- Dashboard boleh dibuka dari mana-mana browser dalam LAN
+- Alert Telegram dihantar bila person detected
+- Dashboard boleh dibuka dari browser dalam LAN
+
+======================================================
+NOTA KESELAMATAN
+======================================================
+
+- JANGAN commit backend\.env ke git (ada kredential kamera & token).
+  Pastikan .env ada dalam .gitignore.
+- Kalau bot token pernah terdedah (contoh dalam screenshot/chat),
+  REVOKE di BotFather (/mybots > bot > API Token > Revoke) dan
+  kemaskini token baru dalam backend\.env.
 
 ======================================================
 TROUBLESHOOTING
 ======================================================
+
+Script PowerShell error "Unexpected token" atau "missing terminator"?
+  - Script perlu Windows PowerShell 5.1 (default). Versi dalam repo
+    sudah PS 5.1-compatible (tiada operator ?. dan tiada em-dash).
+  - Kalau masih terkena, pastikan anda guna versi terkini dari repo.
 
 Backend tak start?
   Get-Service -Name ITUAICCTVBackend
   Semak log: C:\ituaicctv\backend\data\service-logs\
 
 Dashboard tak boleh connect?
-  Pastikan port 8000 terbuka: Test-NetConnection <ip-server> -Port 8000
+  Test-NetConnection <ip-server> -Port 8000
+  Semak profil NIC (kena Private): Get-NetConnectionProfile
   Jalankan semula: .\scripts\server\setup_firewall.ps1
 
 Python tak jumpa?
-  Restart PowerShell selepas install Python
+  Restart PowerShell selepas install Python (PATH perlu refresh)
 
 pip install lambat atau gagal?
-  Cuba: pip install -r backend\requirements.txt --timeout 60
+  pip install -r backend\requirements.txt --timeout 120
+
+NSSM not found?
+  Pastikan nssm.exe ada di C:\nssm\nssm.exe (Langkah 4)
 
 ======================================================
 HUBUNGI ADMIN PROJEK
 ======================================================
 
-Repo    : https://github.com/itumelaka/ituaicctv
+Repo     : https://github.com/itumelaka/ituaicctv
 Dashboard: https://itumelaka.github.io/ituaicctv/
 ======================================================

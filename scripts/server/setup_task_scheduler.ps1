@@ -15,7 +15,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..\..")).Path
+$ProjectRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 $VbsScript   = Join-Path $ProjectRoot "backend\scripts\run_monitor_person_all_once_hidden.vbs"
 $TaskName    = "ITU AI CCTV Person Monitor"
 $IntervalMin = 5
@@ -58,7 +58,7 @@ $Settings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -StartWhenAvailable
 
-# Principal: SYSTEM account — runs without user login
+# Principal: SYSTEM account - runs without user login
 $Principal = New-ScheduledTaskPrincipal `
     -UserId "SYSTEM" `
     -LogonType ServiceAccount `
@@ -86,7 +86,7 @@ Write-Host "  Start-ScheduledTask -TaskName '$TaskName'   # run immediately"
 Write-Host "  Disable-ScheduledTask -TaskName '$TaskName' # pause monitoring"
 Write-Host ""
 
-# Leave disabled — operator enables when ready
+# Leave disabled - operator enables when ready
 Disable-ScheduledTask -TaskName $TaskName | Out-Null
 Write-Host "Task is installed and ready. Enable when ready to start." -ForegroundColor Yellow
 Write-Host ""
