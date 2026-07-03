@@ -152,3 +152,36 @@ This is lighter and more suitable for AI detection.
 ## Repository
 
 https://github.com/itumelaka/ituaicctv
+
+## Monitor Endpoint
+
+Manual monitor check endpoint:
+
+GET /monitor/person/check
+
+This endpoint runs a complete person monitoring check:
+
+CCTV RTSP stream
+? Capture frame
+? Run person-only YOLO detection
+? Create event decision
+? Save event log
+? Save evidence snapshot if person_detected is true
+? Return recommended action
+
+Example no-person response:
+
+status          : ok
+monitor         : person
+action          : no_action
+next_step       : Continue monitoring.
+person_detected : false
+
+Example person-detected response:
+
+status          : ok
+monitor         : person
+action          : attention_required
+next_step       : Review evidence image and consider alert notification.
+person_detected : true
+evidence_path   : data/evidence/...

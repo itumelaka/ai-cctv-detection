@@ -134,3 +134,25 @@ Test-NetConnection 192.168.40.21 -Port 443
 Open camera web UI:
 
 https://192.168.40.21
+
+## Monitor
+
+Manual person monitor check:
+
+GET /monitor/person/check
+
+This endpoint is intended to be used later by a scheduled task, cron job, Windows Task Scheduler, or alert service.
+
+It wraps the full monitoring flow:
+
+1. Capture CCTV frame
+2. Run person-only detection
+3. Evaluate event
+4. Save event log
+5. Save evidence image only when person_detected is true
+6. Return action decision
+
+Possible actions:
+
+no_action
+attention_required
