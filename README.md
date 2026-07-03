@@ -185,3 +185,13 @@ action          : attention_required
 next_step       : Review evidence image and consider alert notification.
 person_detected : true
 evidence_path   : data/evidence/...
+
+## Project Documentation
+
+Additional project documentation:
+
+- docs/PROJECT_STATUS.md
+- docs/TODO.md
+- docs/ROADMAP.md
+- docs/SECURITY_NOTES.md
+- docs/WINDOWS_TASK_SCHEDULER.md
