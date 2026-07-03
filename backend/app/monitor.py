@@ -1,13 +1,18 @@
+from app.alert import send_person_alert
 from app.camera_registry import list_enabled_cameras
 from app.events import evaluate_person_event, evaluate_person_event_for_camera
 
 
 def run_person_monitor_check() -> dict:
     event = evaluate_person_event()
+    alert_sent = False
 
     if event.get("person_detected"):
         action = "attention_required"
-        next_step = "Review evidence image and consider alert notification."
+        next_step = "Alert sent via Telegram." if not event.get("cooldown_active") else "Cooldown active — alert skipped."
+
+        if not event.get("cooldown_active"):
+            alert_sent = send_person_alert(event)
     else:
         action = "no_action"
         next_step = "No person detected. Continue monitoring."
@@ -17,16 +22,21 @@ def run_person_monitor_check() -> dict:
         "monitor": "person",
         "action": action,
         "next_step": next_step,
+        "alert_sent": alert_sent,
         "event": event
     }
 
 
 def run_person_monitor_check_for_camera(camera: dict) -> dict:
     event = evaluate_person_event_for_camera(camera)
+    alert_sent = False
 
     if event.get("person_detected"):
         action = "attention_required"
-        next_step = "Review evidence image and consider alert notification."
+        next_step = "Alert sent via Telegram." if not event.get("cooldown_active") else "Cooldown active — alert skipped."
+
+        if not event.get("cooldown_active"):
+            alert_sent = send_person_alert(event)
     else:
         action = "no_action"
         next_step = "No person detected. Continue monitoring."
@@ -36,6 +46,7 @@ def run_person_monitor_check_for_camera(camera: dict) -> dict:
         "monitor": "person",
         "action": action,
         "next_step": next_step,
+        "alert_sent": alert_sent,
         "event": event,
         "camera_id": camera.get("id")
     }

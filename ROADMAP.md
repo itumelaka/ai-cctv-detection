@@ -71,14 +71,16 @@ Acceptance Criteria:
 
 ## Phase 4: Alert System
 
-Status: **Not started**
+Status: **Complete**
 
 Tasks:
 
-- [ ] Setup Telegram Bot atau email alert.
-- [ ] Hantar alert apabila event berlaku.
-- [ ] Sertakan snapshot jika sesuai.
-- [ ] Tambah setting enable/disable alert per kamera.
+- [x] Setup Telegram Bot alert (alert.py).
+- [x] Hantar alert apabila person_detected=True dan cooldown tidak aktif.
+- [x] Sertakan snapshot sebagai foto Telegram jika evidence ada.
+- [x] Alert skip secara senyap jika token tidak dikonfigurasi.
+- [x] `alert_sent` dikembalikan dalam response monitor endpoint.
+- [ ] Enable/disable alert per kamera (future enhancement).
 
 Acceptance Criteria:
 

@@ -156,9 +156,41 @@ CCTV_CHANNEL=102
 
 YOLO_CONFIDENCE=0.35
 PERSON_EVENT_COOLDOWN_SECONDS=300
+
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
 ```
 
 Never commit `backend/.env`.
+
+## Telegram Alert
+
+Alert dihantar secara automatik apabila `person_detected=True` dan cooldown tidak aktif.
+
+Setup:
+
+1. Buat Telegram Bot melalui [@BotFather](https://t.me/BotFather) dan dapatkan token.
+2. Dapatkan Chat ID — hantar mesej ke bot anda kemudian buka:
+   `https://api.telegram.org/bot<TOKEN>/getUpdates`
+3. Tambah dalam `backend/.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+TELEGRAM_CHAT_ID=987654321
+```
+
+Jika `TELEGRAM_BOT_TOKEN` atau `TELEGRAM_CHAT_ID` kosong, alert akan dilog sebagai skipped dan tidak akan crash sistem.
+
+Alert akan hantar:
+- Foto evidence (jika ada snapshot) dengan caption kamera, masa dan bilangan detections
+- Teks sahaja jika tiada evidence (contoh: cooldown skip)
+
+Alert dihantar daripada endpoint:
+- `GET /monitor/person/check`
+- `GET /monitor/person/check-all`
+- `GET /{camera_id}/person/check`
+
+Response akan termasuk `"alert_sent": true/false`.
 
 ## Event Logging
 

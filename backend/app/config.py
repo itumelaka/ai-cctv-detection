@@ -18,6 +18,9 @@ class Settings:
     yolo_confidence: float = float(os.getenv("YOLO_CONFIDENCE", "0.35"))
     person_event_cooldown_seconds: int = int(os.getenv("PERSON_EVENT_COOLDOWN_SECONDS", "300"))
 
+    telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
     @property
     def rtsp_url(self) -> str:
         username = quote(self.cctv_username, safe="")
