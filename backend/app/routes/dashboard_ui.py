@@ -37,6 +37,10 @@ def dashboard_ui():
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -123,6 +127,12 @@ def dashboard_ui():
     button:hover, .quick-link:hover {
       background: #0b5f59;
       color: #ffffff;
+    }
+
+    button.active, .quick-link.active {
+      background: #ffffff;
+      color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
     }
 
     button:focus, .quick-link:focus {
@@ -394,15 +404,15 @@ def dashboard_ui():
         </div>
         <nav class="quick-links" aria-label="Dashboard quick links">
           <button type="button" id="refreshButton">Refresh now</button>
-          <a class="quick-link" href="/dashboard/summary" target="_blank" rel="noopener">Summary</a>
-          <a class="quick-link" href="/dashboard/cameras" target="_blank" rel="noopener">Cameras</a>
-          <a class="quick-link" href="/dashboard/events/latest" target="_blank" rel="noopener">Latest events</a>
-          <a class="quick-link" href="/dashboard/evidence" target="_blank" rel="noopener">Evidence</a>
-          <a class="quick-link" href="/dashboard/health" target="_blank" rel="noopener">Health</a>
+          <button type="button" class="quick-link" data-scroll-target="summary-section">Summary</button>
+          <button type="button" class="quick-link" data-scroll-target="cameras-section">Cameras</button>
+          <button type="button" class="quick-link" data-scroll-target="latest-events-section">Latest events</button>
+          <button type="button" class="quick-link" data-scroll-target="evidence-section">Evidence</button>
+          <button type="button" class="quick-link" data-scroll-target="health-section">Health</button>
         </nav>
       </div>
 
-      <section class="grid metrics" aria-label="Dashboard totals">
+      <section id="summary-section" class="grid metrics" aria-label="Dashboard totals">
         <div class="metric">
           <div class="label">Total cameras</div>
           <div id="totalCameras" class="value">-</div>
@@ -421,7 +431,7 @@ def dashboard_ui():
         </div>
       </section>
 
-      <section class="panel" style="margin-bottom: 14px;" aria-label="Dashboard health">
+      <section id="health-section" class="panel" style="margin-bottom: 14px;" aria-label="Dashboard health">
         <div class="section-title">
           <h2>Health</h2>
           <span id="healthBadge" class="badge neutral">Waiting</span>
@@ -480,7 +490,7 @@ def dashboard_ui():
             <div id="latestEventSummary" class="empty">No latest event loaded.</div>
           </div>
 
-          <div class="panel">
+          <div id="latest-events-section" class="panel">
             <div class="section-title">
               <h2>Latest 10 Events</h2>
             </div>
@@ -496,7 +506,7 @@ def dashboard_ui():
             <div id="disabledCameraList" class="list"></div>
           </div>
 
-          <div class="panel">
+          <div id="evidence-section" class="panel">
             <div class="section-title">
               <h2>Recent Evidence</h2>
             </div>
@@ -515,7 +525,7 @@ def dashboard_ui():
         </aside>
       </section>
 
-      <section class="panel" style="margin-top: 14px;">
+      <section id="cameras-section" class="panel" style="margin-top: 14px;">
         <div class="section-title">
           <h2>Cameras</h2>
         </div>
@@ -902,6 +912,23 @@ def dashboard_ui():
       }
     }
 
+    function setActiveNavButton(button) {
+      document.querySelectorAll(".quick-links .quick-link").forEach((navButton) => {
+        navButton.classList.toggle("active", navButton === button);
+      });
+    }
+
+    function scrollToSection(sectionId, button) {
+      const section = el(sectionId);
+
+      if (!section) {
+        return;
+      }
+
+      setActiveNavButton(button);
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
     async function renderCameras(camerasData, healthData) {
       const list = el("cameraList");
       clearNode(list);
@@ -1024,6 +1051,11 @@ def dashboard_ui():
     }
 
     el("refreshButton").addEventListener("click", loadDashboard);
+    document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        scrollToSection(button.dataset.scrollTarget, button);
+      });
+    });
     el("refreshEvidenceButton").addEventListener("click", refreshEvidence);
     el("copyEvidencePathButton").addEventListener("click", copyEvidenceFolderPath);
     setInterval(() => {
