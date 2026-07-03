@@ -195,6 +195,59 @@ def get_latest_dashboard_events(limit: int = 10) -> dict:
     }
 
 
+def _get_event_camera_id(event: dict) -> str | None:
+    camera = event.get("camera") or {}
+    return camera.get("id") or event.get("camera_id")
+
+
+def get_latest_dashboard_event_for_camera(camera_id: str) -> dict:
+    events = [
+        event for event in read_all_event_logs()
+        if _get_event_camera_id(event) == camera_id
+    ]
+
+    latest_event = events[-1] if events else None
+    dashboard_events = add_evidence_urls([latest_event]) if latest_event else []
+
+    return {
+        "status": "ok",
+        "camera_id": camera_id,
+        "latest_event": dashboard_events[0] if dashboard_events else None
+    }
+
+
+def get_dashboard_camera_event_stats(camera_id: str) -> dict:
+    events = [
+        event for event in read_all_event_logs()
+        if _get_event_camera_id(event) == camera_id
+    ]
+
+    person_events = 0
+    latest_event_time = None
+    latest_evidence_url = None
+
+    for event in events:
+        if event.get("event_type") == "person_detected" or event.get("person_detected") is True:
+            person_events += 1
+
+        if event.get("timestamp"):
+            latest_event_time = event.get("timestamp")
+
+        evidence_filename = _get_evidence_filename(event)
+
+        if evidence_filename:
+            latest_evidence_url = f"/events/evidence/{evidence_filename}"
+
+    return {
+        "status": "ok",
+        "camera_id": camera_id,
+        "total_events": len(events),
+        "person_events": person_events,
+        "latest_event_time": latest_event_time,
+        "latest_evidence_url": latest_evidence_url
+    }
+
+
 def get_event_stats() -> dict:
     events = read_all_event_logs()
 

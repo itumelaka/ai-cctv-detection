@@ -256,6 +256,33 @@ Dashboard camera responses include camera totals and a credential-safe camera li
 
 Dashboard latest events responses are sorted newest first and include evidence_url when an event has an evidence image.
 
+## Latest Milestone - Per-Camera Dashboard Endpoints
+
+Updated: 2026-07-03
+
+Per-camera dashboard endpoints have been added:
+
+- GET /dashboard/cameras/{camera_id}/latest-event
+- GET /dashboard/cameras/{camera_id}/stats
+
+These endpoints validate camera_id against backend/config/cameras.json and return 404 when the camera is unknown.
+
+They read backend/data/events.jsonl only and do not run YOLO detection or open CCTV streams.
+
+Dashboard latest-event response includes:
+
+- camera_id
+- latest_event, or null when no event exists
+- evidence_url when the latest event has evidence
+
+Dashboard per-camera stats response includes:
+
+- camera_id
+- total_events
+- person_events
+- latest_event_time
+- latest_evidence_url
+
 ## Latest Milestone - Dashboard Summary Endpoint
 
 Updated: 2026-07-03

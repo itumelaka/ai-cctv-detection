@@ -191,11 +191,30 @@ Dashboard data now available:
 - Evidence image metadata with /events/evidence/{filename} links
 - Credential-safe camera list from backend/config/cameras.json
 - Latest event log entries from backend/data/events.jsonl
+- Per-camera latest event and event stats
 
 Next dashboard work:
 
-- Per-camera detail endpoint
 - Frontend dashboard UI
+
+## Roadmap Update - Per-Camera Dashboard APIs
+
+Status: Completed
+
+Per-camera dashboard API endpoints have been added:
+
+- GET /dashboard/cameras/{camera_id}/latest-event
+- GET /dashboard/cameras/{camera_id}/stats
+
+These endpoints make the dashboard camera detail view possible without triggering YOLO detection. Unknown camera IDs return 404 after validation against backend/config/cameras.json.
+
+Dashboard camera detail data now available:
+
+- Latest event for a configured camera
+- Per-camera total event count
+- Per-camera person event count
+- Latest event timestamp
+- Latest evidence link when available
 
 ## Roadmap Update - Dashboard Summary
 

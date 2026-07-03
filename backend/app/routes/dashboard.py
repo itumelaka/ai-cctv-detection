@@ -1,7 +1,13 @@
-from fastapi import APIRouter, Query
-from app.camera_registry import load_cameras, list_enabled_cameras
+from fastapi import APIRouter, HTTPException, Query
+from app.camera_registry import get_camera_by_id, load_cameras, list_enabled_cameras
 from app.event_log import list_evidence_images
-from app.events import get_event_stats, get_latest_events, get_latest_dashboard_events
+from app.events import (
+    get_dashboard_camera_event_stats,
+    get_event_stats,
+    get_latest_events,
+    get_latest_dashboard_event_for_camera,
+    get_latest_dashboard_events,
+)
 
 router = APIRouter(
     prefix="/dashboard",
@@ -110,3 +116,25 @@ def dashboard_cameras():
 @router.get("/events/latest")
 def dashboard_latest_events(limit: int = Query(default=10, ge=1, le=100)):
     return get_latest_dashboard_events(limit=limit)
+
+
+def _validate_dashboard_camera(camera_id: str) -> None:
+    try:
+        get_camera_by_id(camera_id)
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Camera not found: {camera_id}"
+        )
+
+
+@router.get("/cameras/{camera_id}/latest-event")
+def dashboard_camera_latest_event(camera_id: str):
+    _validate_dashboard_camera(camera_id)
+    return get_latest_dashboard_event_for_camera(camera_id)
+
+
+@router.get("/cameras/{camera_id}/stats")
+def dashboard_camera_stats(camera_id: str):
+    _validate_dashboard_camera(camera_id)
+    return get_dashboard_camera_event_stats(camera_id)

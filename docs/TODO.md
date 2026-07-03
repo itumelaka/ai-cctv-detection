@@ -34,7 +34,7 @@ Camera list currently added:
 - [ ] Add camera readiness status
 - [ ] Add ready_for_ai field in cameras.json
 - [ ] Add monitor all enabled cameras endpoint
-- [ ] Add per-camera event stats
+- [x] Add per-camera event stats
 - [ ] Add per-camera latest evidence endpoint
 - [ ] Add duplicate detection filtering
 - [ ] Add configurable detection classes
@@ -143,8 +143,8 @@ Camera list currently added:
 - [x] Add GET /dashboard/evidence
 - [x] Add GET /dashboard/cameras
 - [x] Add GET /dashboard/events/latest
-- [ ] Add per-camera latest event endpoint
-- [ ] Add per-camera stats endpoint
+- [x] Add per-camera latest event endpoint
+- [x] Add per-camera stats endpoint
 - [ ] Add simple frontend dashboard page later
 
 ## Completed on 2026-07-03 - Lightweight Dashboard Endpoints
@@ -156,6 +156,15 @@ Camera list currently added:
 - [x] Add GET /dashboard/events/latest
 - [x] Include evidence_url for events with evidence images
 - [x] Keep dashboard endpoints lightweight with no YOLO execution
+
+## Completed on 2026-07-03 - Per-Camera Dashboard Endpoints
+
+- [x] Add GET /dashboard/cameras/{camera_id}/latest-event
+- [x] Add GET /dashboard/cameras/{camera_id}/stats
+- [x] Validate camera_id against configured cameras
+- [x] Return 404 for unknown camera_id
+- [x] Include evidence_url when evidence is available
+- [x] Keep per-camera dashboard endpoints lightweight with no YOLO execution
 
 ## Completed on 2026-07-03 - Dashboard Summary Endpoint
 
@@ -173,6 +182,6 @@ Camera list currently added:
 - [x] Add GET /dashboard/evidence
 - [x] Add GET /dashboard/cameras
 - [x] Add GET /dashboard/events/latest
-- [ ] Add per-camera latest event endpoint
-- [ ] Add per-camera stats endpoint
+- [x] Add per-camera latest event endpoint
+- [x] Add per-camera stats endpoint
 - [ ] Add simple frontend dashboard page later
