@@ -1,17 +1,15 @@
 from datetime import datetime, timezone
 from app.config import settings
-from app.detection import run_person_detection, run_person_snapshot_jpeg
-from app.event_log import (
-    append_event_log,
-    read_latest_event_logs,
-    read_all_event_logs,
-    save_evidence_image,
+from app.detection import (
+    run_person_detection,
+    run_person_detection_for_camera,
+    run_person_snapshot_jpeg,
+    run_person_snapshot_jpeg_for_camera,
 )
+from app.event_log import append_event_log, read_latest_event_logs, read_all_event_logs, save_evidence_image
 
 
-def evaluate_person_event() -> dict:
-    detection_result = run_person_detection()
-
+def _build_person_event(detection_result: dict, snapshot_func, camera_context: dict | None = None) -> dict:
     detections_count = detection_result["detections_count"]
     person_detected = detection_result["person_detected"]
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -23,13 +21,29 @@ def evaluate_person_event() -> dict:
         severity = "medium"
         message = "Person detected in CCTV frame."
 
-        image_bytes = run_person_snapshot_jpeg()
-        filename = f"person_detected_{timestamp}.jpg"
+        image_bytes = snapshot_func()
+        camera_id = camera_context.get("id") if camera_context else "default_camera"
+        filename = f"person_detected_{camera_id}_{timestamp}.jpg"
         evidence_path = save_evidence_image(image_bytes, filename)
     else:
         event_type = "no_person"
         severity = "none"
         message = "No person detected in CCTV frame."
+
+    camera_data = {
+        "host": settings.cctv_host,
+        "channel": settings.cctv_channel,
+        "frame_width": detection_result["camera"]["frame_width"],
+        "frame_height": detection_result["camera"]["frame_height"]
+    }
+
+    if camera_context:
+        camera_data.update({
+            "id": camera_context.get("id"),
+            "name": camera_context.get("name"),
+            "host": camera_context.get("host"),
+            "channel": camera_context.get("channel")
+        })
 
     event = {
         "status": "ok",
@@ -37,12 +51,7 @@ def evaluate_person_event() -> dict:
         "severity": severity,
         "message": message,
         "timestamp": timestamp,
-        "camera": {
-            "host": settings.cctv_host,
-            "channel": settings.cctv_channel,
-            "frame_width": detection_result["camera"]["frame_width"],
-            "frame_height": detection_result["camera"]["frame_height"]
-        },
+        "camera": camera_data,
         "person_detected": person_detected,
         "detections_count": detections_count,
         "detections": detection_result["detections"],
@@ -52,6 +61,24 @@ def evaluate_person_event() -> dict:
     append_event_log(event)
 
     return event
+
+
+def evaluate_person_event() -> dict:
+    detection_result = run_person_detection()
+    return _build_person_event(
+        detection_result=detection_result,
+        snapshot_func=run_person_snapshot_jpeg
+    )
+
+
+def evaluate_person_event_for_camera(camera: dict) -> dict:
+    detection_result = run_person_detection_for_camera(camera)
+
+    return _build_person_event(
+        detection_result=detection_result,
+        snapshot_func=lambda: run_person_snapshot_jpeg_for_camera(camera),
+        camera_context=camera
+    )
 
 
 def get_latest_events(limit: int = 20) -> dict:
