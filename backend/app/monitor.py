@@ -88,3 +88,66 @@ def run_person_monitor_check_all() -> dict:
         "failed_count": failed_count,
         "results": results
     }
+
+
+def run_person_monitor_summary() -> dict:
+    result = run_person_monitor_check_all()
+    cameras = []
+
+    for item in result.get("results", []):
+        event = item.get("event") or {}
+        camera = event.get("camera") or {}
+
+        if item.get("status") == "failed":
+            cameras.append({
+                "camera_id": item.get("camera_id"),
+                "camera_name": item.get("camera_name"),
+                "camera_host": item.get("camera_host"),
+                "channel": item.get("channel"),
+                "status": "failed",
+                "action": item.get("action"),
+                "person_detected": False,
+                "detections_count": 0,
+                "evidence_path": None,
+                "cooldown_active": False,
+                "timestamp": None,
+                "error": item.get("error")
+            })
+            continue
+
+        cameras.append({
+            "camera_id": item.get("camera_id"),
+            "camera_name": camera.get("name"),
+            "camera_host": camera.get("host"),
+            "channel": camera.get("channel"),
+            "status": item.get("status"),
+            "action": item.get("action"),
+            "person_detected": event.get("person_detected"),
+            "detections_count": event.get("detections_count"),
+            "evidence_path": event.get("evidence_path"),
+            "cooldown_active": event.get("cooldown_active"),
+            "timestamp": event.get("timestamp")
+        })
+
+    attention_cameras = [
+        camera for camera in cameras
+        if camera.get("action") == "attention_required"
+    ]
+
+    failed_cameras = [
+        camera for camera in cameras
+        if camera.get("status") == "failed"
+    ]
+
+    return {
+        "status": "ok",
+        "monitor": "person",
+        "mode": "summary",
+        "enabled_cameras_count": result.get("enabled_cameras_count"),
+        "attention_required_count": result.get("attention_required_count"),
+        "no_action_count": result.get("no_action_count"),
+        "failed_count": result.get("failed_count"),
+        "attention_cameras": attention_cameras,
+        "failed_cameras": failed_cameras,
+        "cameras": cameras
+    }

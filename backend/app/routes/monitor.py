@@ -4,6 +4,7 @@ from app.monitor import (
     run_person_monitor_check,
     run_person_monitor_check_for_camera,
     run_person_monitor_check_all,
+    run_person_monitor_summary,
 )
 
 router = APIRouter(
@@ -20,6 +21,11 @@ def monitor_person_check():
 @router.get("/person/check-all")
 def monitor_person_check_all():
     return run_person_monitor_check_all()
+
+
+@router.get("/person/summary")
+def monitor_person_summary():
+    return run_person_monitor_summary()
 
 
 @router.get("/{camera_id}/person/check")
