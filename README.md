@@ -32,11 +32,10 @@ Confirmed at this checkpoint:
 
 Next recommended work:
 
-1. Dashboard stale/offline visual polish
-2. Scheduler task enable decision
-3. Investigate block_f_cam_8 network/IP
-4. Later: face detection planning
-5. Later: number plate recognition planning
+1. Scheduler task enable decision
+2. Investigate block_f_cam_8 network/IP
+3. Later: face detection planning
+4. Later: number plate recognition planning
 
 ## Current Status
 
@@ -69,6 +68,7 @@ Completed:
 - Simple browser dashboard UI
 - Dashboard auto-refresh and status UI polish
 - Dashboard health card with per-camera health badges
+- Dashboard stale/offline visual polish
 - CCTV sub-stream configured to H.264 for OpenCV compatibility
 - YOLOv8n running in CPU mode
 
@@ -175,7 +175,7 @@ Open this URL after starting the backend:
 
 http://127.0.0.1:8000/dashboard-ui
 
-The dashboard UI is a simple browser page that consumes the dashboard API endpoints only. It shows camera totals, disabled cameras, latest events, clickable evidence thumbnails, camera status badges, per-camera event counts, a health card, scheduler latest run and summary, per-camera health badges, last updated time, and a 30-second auto-refresh countdown.
+The dashboard UI is a simple browser page that consumes the dashboard API endpoints only. It shows camera totals, disabled cameras, latest events, clickable evidence thumbnails, camera status badges, per-camera event counts, a health card, scheduler latest run and summary, per-camera health badges, stale/offline counts, last seen source, stale minutes, health notes, last updated time, and a 30-second auto-refresh countdown.
 
 The page also includes quick links for:
 
@@ -316,11 +316,10 @@ This is lighter and more suitable for AI detection.
 
 ## Next Milestones
 
-1. Dashboard stale/offline visual polish
-2. Scheduler task enable decision
-3. Investigate block_f_cam_8 network/IP
-4. Later: face detection planning
-5. Later: number plate recognition planning
+1. Scheduler task enable decision
+2. Investigate block_f_cam_8 network/IP
+3. Later: face detection planning
+4. Later: number plate recognition planning
 
 ## Repository
 

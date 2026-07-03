@@ -29,6 +29,7 @@ def dashboard_ui():
       --ok-soft: #dcf7e7;
       --warn: #996a13;
       --warn-soft: #fff1cf;
+      --muted-soft: #edf1f5;
       --shadow: 0 8px 24px rgba(23, 33, 43, 0.08);
     }
 
@@ -246,6 +247,11 @@ def dashboard_ui():
       background: var(--accent-soft);
     }
 
+    .badge.muted {
+      color: var(--muted);
+      background: var(--muted-soft);
+    }
+
     .event-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 86px;
@@ -431,6 +437,22 @@ def dashboard_ui():
             <div class="label">Scheduler summary</div>
             <div id="schedulerLatestSummary" class="value">-</div>
           </div>
+          <div class="health-stat">
+            <div class="label">Active</div>
+            <div id="healthActiveCount" class="value">-</div>
+          </div>
+          <div class="health-stat">
+            <div class="label">Stale</div>
+            <div id="healthStaleCount" class="value">-</div>
+          </div>
+          <div class="health-stat">
+            <div class="label">No recent event</div>
+            <div id="healthNoRecentCount" class="value">-</div>
+          </div>
+          <div class="health-stat">
+            <div class="label">Offline / disabled</div>
+            <div id="healthOfflineDisabledCount" class="value">-</div>
+          </div>
         </div>
       </section>
 
@@ -531,12 +553,16 @@ def dashboard_ui():
         return "ok";
       }
 
-      if (status === "disabled" || status === "stale" || status === "warning" || status === "failing") {
+      if (status === "stale" || status === "no_recent_event" || status === "warning" || status === "failing") {
         return "warn";
       }
 
       if (status === "failed" || status === "offline") {
         return "danger";
+      }
+
+      if (status === "disabled") {
+        return "muted";
       }
 
       return "neutral";
@@ -739,7 +765,22 @@ def dashboard_ui():
       const cameras = healthData?.cameras || {};
       const events = healthData?.events || {};
       const scheduler = healthData?.scheduler || {};
+      const counts = {
+        active: 0,
+        stale: 0,
+        no_recent_event: 0,
+        offline: 0,
+        disabled: 0
+      };
       const badge = el("healthBadge");
+
+      (healthData?.per_camera || []).forEach((camera) => {
+        const status = camera.health_status || "unknown";
+
+        if (Object.prototype.hasOwnProperty.call(counts, status)) {
+          counts[status] += 1;
+        }
+      });
 
       el("healthTotalCameras").textContent = text(cameras.total);
       el("healthEnabledCameras").textContent = text(cameras.enabled);
@@ -747,9 +788,24 @@ def dashboard_ui():
       el("healthLatestEventTime").textContent = formatTime(events.latest_event_time);
       el("schedulerLatestRunTime").textContent = text(scheduler.latest_run_time);
       el("schedulerLatestSummary").textContent = text(scheduler.latest_summary);
+      el("healthActiveCount").textContent = counts.active;
+      el("healthStaleCount").textContent = counts.stale;
+      el("healthNoRecentCount").textContent = counts.no_recent_event;
+      el("healthOfflineDisabledCount").textContent = counts.offline + counts.disabled;
 
-      badge.className = cameras.disabled ? "badge warn" : "badge ok";
-      badge.textContent = cameras.disabled ? `${cameras.disabled} disabled` : "ok";
+      if (counts.offline > 0) {
+        badge.className = "badge danger";
+        badge.textContent = `${counts.offline} offline`;
+      } else if (counts.stale > 0 || counts.no_recent_event > 0) {
+        badge.className = "badge warn";
+        badge.textContent = `${counts.stale + counts.no_recent_event} need review`;
+      } else if (counts.disabled > 0) {
+        badge.className = "badge muted";
+        badge.textContent = `${counts.disabled} disabled`;
+      } else {
+        badge.className = "badge ok";
+        badge.textContent = "ok";
+      }
     }
 
     function renderEvidence(evidenceData) {
@@ -839,7 +895,7 @@ def dashboard_ui():
         title.className = "item-title";
         title.textContent = text(camera.name || camera.camera_id);
 
-        head.append(title, makeBadge(camera.enabled ? "enabled" : "disabled", camera.enabled ? "ok" : "danger"));
+        head.append(title, makeBadge(text(health.health_status, camera.enabled ? "active" : "disabled"), healthTone(health.health_status)));
 
         const meta = document.createElement("div");
         meta.className = "meta";
@@ -848,6 +904,18 @@ def dashboard_ui():
         const notes = document.createElement("div");
         notes.className = "meta";
         notes.textContent = text(camera.notes, "");
+
+        const freshness = document.createElement("div");
+        freshness.className = "meta";
+        freshness.textContent = `Last event: ${formatTime(health.last_event_time)} | Stale: ${text(health.stale_minutes, "n/a")} min / ${text(health.stale_threshold_minutes, "n/a")} min`;
+
+        const source = document.createElement("div");
+        source.className = "meta";
+        source.textContent = `Last seen source: ${text(health.last_seen_source, "none")}`;
+
+        const healthNote = document.createElement("div");
+        healthNote.className = "meta";
+        healthNote.textContent = text(health.health_note || camera.health_note, "");
 
         const statsRow = document.createElement("div");
         statsRow.className = "camera-stats";
@@ -866,7 +934,7 @@ def dashboard_ui():
           statsRow.appendChild(evidenceLink);
         }
 
-        item.append(head, meta, notes, statsRow);
+        item.append(head, meta, notes, freshness, source, healthNote, statsRow);
         list.appendChild(item);
       });
     }

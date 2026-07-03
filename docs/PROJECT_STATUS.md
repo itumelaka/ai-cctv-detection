@@ -21,6 +21,7 @@ Confirmed at this checkpoint:
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
 - Dashboard UI includes auto-refresh every 30 seconds, last updated time, next refresh countdown, quick links/buttons, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
+- Dashboard UI includes stale/offline health counts and camera freshness details.
 - backend/app/dashboard_health.py exists.
 - tests/test_dashboard_health.py exists.
 - Unit test passed with: python -m unittest discover -s tests -p "test_*.py" -v
@@ -29,11 +30,10 @@ Confirmed at this checkpoint:
 
 Next recommended work:
 
-1. Dashboard stale/offline visual polish
-2. Scheduler task enable decision
-3. Investigate block_f_cam_8 network/IP
-4. Later: face detection planning
-5. Later: number plate recognition planning
+1. Scheduler task enable decision
+2. Investigate block_f_cam_8 network/IP
+3. Later: face detection planning
+4. Later: number plate recognition planning
 
 ## Current Project Goal
 
@@ -74,6 +74,7 @@ Completed foundation and dashboard features:
 - Lightweight browser dashboard
 - Dashboard auto-refresh and status UI polish
 - Dashboard health card with per-camera health badges
+- Dashboard stale/offline visual polish
 
 Current camera status:
 
@@ -222,11 +223,10 @@ The project now has a lightweight dashboard health endpoint and health card base
 
 Next technical focus:
 
-1. Dashboard stale/offline visual polish
-2. Scheduler task enable decision
-3. Investigate block_f_cam_8 network/IP
-4. Later: face detection planning
-5. Later: number plate recognition planning
+1. Scheduler task enable decision
+2. Investigate block_f_cam_8 network/IP
+3. Later: face detection planning
+4. Later: number plate recognition planning
 
 ## Latest Milestone - Multi-Camera Scheduler
 
@@ -493,6 +493,34 @@ Current status behavior:
 - no_recent_event for enabled cameras with no event yet
 
 The /dashboard-ui camera cards show stale health using the warning badge style.
+
+## Latest Milestone - Dashboard Stale/Offline Visual Polish
+
+Updated: 2026-07-03
+
+The /dashboard-ui Health card now shows derived health counts from /dashboard/health:
+
+- active
+- stale
+- no_recent_event
+- offline
+- disabled
+
+Camera cards now show:
+
+- health_status
+- stale_minutes
+- stale_threshold_minutes
+- last_seen_source
+- health_note when available
+
+Badge behavior:
+
+- active uses success style
+- stale uses warning style
+- offline uses danger style
+- disabled uses muted style
+- no_recent_event uses warning style
 
 ## Latest Milestone - Dashboard Summary Endpoint
 

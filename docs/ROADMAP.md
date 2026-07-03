@@ -19,16 +19,16 @@ Checkpoint summary:
 - Dashboard health includes scheduler log summary when backend/data/task-logs/monitor_person_all.log is available.
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
+- Dashboard stale/offline visual polish is usable.
 - Unit tests and compile checks passed at this checkpoint.
 - sambung.txt is a private local handoff note and should not be committed.
 
 Next recommended work:
 
-1. Dashboard stale/offline visual polish
-2. Scheduler task enable decision
-3. Investigate block_f_cam_8 network/IP
-4. Later: face detection planning
-5. Later: number plate recognition planning
+1. Scheduler task enable decision
+2. Investigate block_f_cam_8 network/IP
+3. Later: face detection planning
+4. Later: number plate recognition planning
 
 ## Phase 1 - Backend Foundation
 
@@ -146,6 +146,7 @@ Planned features:
 - Dashboard health card - completed
 - Scheduler log health summary - completed
 - Stale camera health logic - completed
+- Dashboard stale/offline visual polish - completed
 - Search and filter
 - Future face recognition view
 - Future plate recognition view
@@ -245,7 +246,6 @@ Dashboard foundation currently includes:
 
 Next dashboard work:
 
-- Dashboard stale/offline visual polish
 - Scheduler task enable decision
 - Investigate block_f_cam_8 network/IP
 
@@ -271,7 +271,6 @@ Dashboard data now available:
 
 Next dashboard work:
 
-- Dashboard stale/offline visual polish
 - Scheduler task enable decision
 - Investigate block_f_cam_8 network/IP
 
@@ -321,7 +320,6 @@ Dashboard UI currently includes:
 
 Next dashboard work:
 
-- Dashboard stale/offline visual polish
 - Scheduler task enable decision
 - Investigate block_f_cam_8 network/IP
 - Later: face detection planning
@@ -398,8 +396,25 @@ Dashboard foundation currently includes:
 
 Next dashboard work:
 
-- Dashboard stale/offline visual polish
 - Scheduler task enable decision
 - Investigate block_f_cam_8 network/IP
 - Later: face detection planning
 - Later: number plate recognition planning
+
+## Roadmap Update - Dashboard Stale/Offline Visual Polish
+
+Status: Completed
+
+The browser dashboard now shows clearer stale and offline health information from /dashboard/health.
+
+Health card visual summary now includes:
+
+- active count
+- stale count
+- no_recent_event count
+- offline count
+- disabled count
+
+Camera cards now show health_status, stale_minutes, stale_threshold_minutes, last_seen_source, and health_note when available.
+
+Badge behavior now maps active to success, stale and no_recent_event to warning, offline to danger, and disabled to muted.

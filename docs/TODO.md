@@ -24,7 +24,7 @@ Checkpoint notes:
 - [x] Add camera health from scheduler log
 - [x] Enhance dashboard health card
 - [x] Add stale camera health logic
-- [ ] Dashboard stale/offline visual polish
+- [x] Dashboard stale/offline visual polish
 - [ ] Scheduler task enable decision
 - [ ] Investigate block_f_cam_8 network/IP issue
 - [ ] Prepare face detection planning notes later
@@ -104,7 +104,7 @@ Camera list:
 - [x] Improve latest successful check tracking per camera
 - [x] Add stale health badge support
 - [x] Document active/stale/no_recent_event/disabled/offline health logic
-- [ ] Dashboard stale/offline visual polish
+- [x] Dashboard stale/offline visual polish
 - [ ] Search by camera
 - [ ] Search by date
 - [ ] Search by event type
@@ -141,7 +141,7 @@ Camera list:
 - [x] Add camera health from scheduler log
 - [x] Enhance dashboard health card
 - [x] Add stale camera health logic
-- [ ] Dashboard stale/offline visual polish
+- [x] Dashboard stale/offline visual polish
 - [ ] Scheduler task enable decision
 - [ ] Investigate block_f_cam_8 network/IP issue
 - [ ] Add event cooldown to avoid repeated evidence spam
@@ -230,6 +230,15 @@ Camera list:
 - [x] Return stale_minutes, stale_threshold_minutes, and last_seen_source per camera
 - [x] Return offline for disabled cameras marked offline
 - [x] Show stale health badge style in /dashboard-ui
+
+## Completed on 2026-07-03 - Dashboard Stale/Offline Visual Polish
+
+- [x] Show active, stale, no_recent_event, offline, and disabled counts in Health card
+- [x] Use success badge for active cameras
+- [x] Use warning badge for stale and no_recent_event cameras
+- [x] Use danger badge for offline cameras
+- [x] Use muted badge for disabled cameras
+- [x] Show health_status, stale_minutes, stale_threshold_minutes, last_seen_source, and health_note in camera cards
 
 ## Completed on 2026-07-03 - Lightweight Dashboard Endpoints
 
