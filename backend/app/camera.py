@@ -68,10 +68,12 @@ def test_camera_connection(camera: dict) -> dict:
             "camera_name": camera.get("name"),
             "camera_host": camera.get("host"),
             "channel": camera.get("channel"),
+            "ready_for_ai": False,
             "rtsp_url": build_masked_rtsp_url(camera)
         }
 
     height, width = frame.shape[:2]
+    ready_for_ai = width <= 1280 and height <= 720
 
     return {
         "status": "connected",
@@ -82,7 +84,43 @@ def test_camera_connection(camera: dict) -> dict:
         "channel": camera.get("channel"),
         "frame_width": width,
         "frame_height": height,
+        "ready_for_ai": ready_for_ai,
         "rtsp_url": build_masked_rtsp_url(camera)
+    }
+
+
+def audit_cameras(cameras: list[dict]) -> dict:
+    results = []
+
+    for camera in cameras:
+        if not camera.get("enabled", True):
+            results.append({
+                "status": "skipped",
+                "message": "Camera is disabled.",
+                "camera_id": camera.get("id"),
+                "camera_name": camera.get("name"),
+                "camera_host": camera.get("host"),
+                "channel": camera.get("channel"),
+                "ready_for_ai": False
+            })
+            continue
+
+        result = test_camera_connection(camera)
+        results.append(result)
+
+    connected_count = len([item for item in results if item.get("status") == "connected"])
+    failed_count = len([item for item in results if item.get("status") == "failed"])
+    skipped_count = len([item for item in results if item.get("status") == "skipped"])
+    ready_count = len([item for item in results if item.get("ready_for_ai") is True])
+
+    return {
+        "status": "ok",
+        "total": len(results),
+        "connected_count": connected_count,
+        "failed_count": failed_count,
+        "skipped_count": skipped_count,
+        "ready_for_ai_count": ready_count,
+        "results": results
     }
 
 

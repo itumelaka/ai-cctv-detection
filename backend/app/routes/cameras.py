@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
-from app.camera import test_rtsp_connection, capture_snapshot_jpeg, test_camera_connection
+from app.camera import (
+    test_rtsp_connection,
+    capture_snapshot_jpeg,
+    test_camera_connection,
+    audit_cameras,
+)
 from app.camera_registry import load_cameras, list_enabled_cameras, get_camera_by_id
 
 router = APIRouter(
@@ -49,6 +54,12 @@ def enabled_cameras():
         "enabled_count": len(cameras),
         "cameras": cameras
     }
+
+
+@router.get("/audit")
+def cameras_audit():
+    cameras = load_cameras()
+    return audit_cameras(cameras)
 
 
 @router.get("/{camera_id}/test")
