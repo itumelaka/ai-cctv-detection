@@ -86,3 +86,25 @@ Camera list currently added:
 - [ ] Configure runtime data folder
 - [ ] Configure backup for evidence/logs
 - [ ] Add service monitoring
+
+## Completed on 2026-07-03
+
+- [x] Add GET /cameras/audit
+- [x] Add GET /monitor/person/check-all
+- [x] Create script to monitor all enabled cameras
+- [x] Create BAT launcher for multi-camera monitor
+- [x] Create hidden VBS launcher for Task Scheduler
+- [x] Update Task Scheduler action to use multi-camera launcher
+- [x] Keep scheduler disabled after manual test
+
+## Next TODO
+
+- [ ] Update Windows Task Scheduler documentation
+- [ ] Add summary-friendly monitor output
+- [ ] Add event cooldown to avoid repeated evidence spam
+- [ ] Add per-camera confidence threshold
+- [ ] Investigate block_f_cam_8 network issue
+- [ ] Lower block_e_cam_1 sub-stream from 1280x720 to 640x360 if CPU usage is high
+- [ ] Add dashboard-ready API endpoint
+- [ ] Prepare face detection planning notes
+- [ ] Prepare number plate recognition planning notes

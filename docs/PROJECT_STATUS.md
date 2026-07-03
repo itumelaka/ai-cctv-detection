@@ -110,3 +110,35 @@ Next technical focus:
 3. Multi-camera scheduler script
 4. Evidence snapshot per camera
 5. Dashboard-ready API response
+
+## Latest Milestone - Multi-Camera Scheduler
+
+Updated: 2026-07-03
+
+Multi-camera monitoring is now working.
+
+Confirmed:
+
+- GET /cameras/audit works
+- GET /monitor/person/check-all works
+- 9 enabled cameras can be monitored
+- 1 camera is disabled temporarily:
+  - block_f_cam_8
+  - 192.168.40.20
+  - Reason: not reachable by ping or RTSP port 554
+- Multi-camera scheduler script works:
+  - backend/scripts/monitor_person_all_once.py
+  - backend/scripts/run_monitor_person_all_once.bat
+  - backend/scripts/run_monitor_person_all_once_hidden.vbs
+- Windows Task Scheduler action has been updated to use the multi-camera hidden VBS launcher
+- Task Scheduler is intentionally kept disabled until operational testing is complete
+
+Current working monitoring flow:
+
+Camera registry
+? enabled cameras only
+? person detection per camera
+? event log
+? evidence snapshot if person detected
+? task log
+
