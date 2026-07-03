@@ -29,6 +29,7 @@ Rules:
 - Do not show backend/.env values in the dashboard.
 - Keep dashboard endpoints lightweight and read-only unless a future change explicitly adds protected controls.
 - Evidence links should use the local evidence-serving endpoint, such as /events/evidence/{filename}, not direct camera URLs.
+- Scheduler log health summaries must stay credential-safe. If log lines ever contain credential-like fields or RTSP URLs, dashboard health output should mask them before display.
 
 ## CCTV User Account
 

@@ -6,7 +6,7 @@ Last updated: 2026-07-03
 
 Latest confirmed commit:
 
-d18747e feat: add dashboard health endpoint
+95e246c feat: add stale camera health logic
 
 Confirmed at this checkpoint:
 
@@ -18,6 +18,8 @@ Confirmed at this checkpoint:
 - Disabled camera reason: ping and RTSP port 554 are not reachable.
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
+- Scheduler summary in GET /dashboard/health is usable.
+- Stale camera health logic in GET /dashboard/health is usable.
 - Dashboard UI includes auto-refresh every 30 seconds, last updated time, next refresh countdown, quick links/buttons, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - backend/app/dashboard_health.py exists.
 - tests/test_dashboard_health.py exists.
@@ -27,12 +29,11 @@ Confirmed at this checkpoint:
 
 Next recommended work:
 
-1. Improve block_f_cam_8 metadata if not already committed
-2. Add camera health from scheduler log
-3. Enhance dashboard health card
-4. Investigate block_f_cam_8 network/IP issue
-5. Later: face detection planning
-6. Later: number plate recognition planning
+1. Dashboard stale/offline visual polish
+2. Scheduler task enable decision
+3. Investigate block_f_cam_8 network/IP
+4. Later: face detection planning
+5. Later: number plate recognition planning
 
 ## Current Project Goal
 
@@ -67,6 +68,8 @@ Completed foundation and dashboard features:
 - Check-all monitor
 - Dashboard summary API
 - Dashboard health API
+- Scheduler-log health summary
+- Stale camera health logic
 - Per-camera dashboard event endpoints
 - Lightweight browser dashboard
 - Dashboard auto-refresh and status UI polish
@@ -91,6 +94,25 @@ Important dashboard URLs:
 - /dashboard/evidence
 - /dashboard/cameras/{camera_id}/latest-event
 - /dashboard/cameras/{camera_id}/stats
+
+GET /dashboard/health currently includes:
+
+- camera totals
+- disabled/offline camera list
+- event health
+- scheduler summary
+- per-camera active/stale/no_recent_event/disabled/offline status
+- stale threshold minutes
+- stale_minutes
+- last_seen_source
+
+Current dashboard health status logic:
+
+- offline for disabled cameras with status offline
+- disabled for disabled cameras
+- active for enabled cameras with recent event/check
+- stale for enabled cameras with old event/check
+- no_recent_event for enabled cameras with no event/check yet
 
 Current scheduler status:
 
@@ -200,12 +222,11 @@ The project now has a lightweight dashboard health endpoint and health card base
 
 Next technical focus:
 
-1. Improve block_f_cam_8 metadata if not already committed
-2. Add camera health from scheduler log
-3. Enhance dashboard health card
-4. Investigate block_f_cam_8 network/IP issue
-5. Later: face detection planning
-6. Later: number plate recognition planning
+1. Dashboard stale/offline visual polish
+2. Scheduler task enable decision
+3. Investigate block_f_cam_8 network/IP
+4. Later: face detection planning
+5. Later: number plate recognition planning
 
 ## Latest Milestone - Multi-Camera Scheduler
 

@@ -4,7 +4,7 @@
 
 Latest confirmed commit:
 
-d18747e feat: add dashboard health endpoint
+95e246c feat: add stale camera health logic
 
 Checkpoint summary:
 
@@ -17,15 +17,18 @@ Checkpoint summary:
 - GET /dashboard/health is usable.
 - Dashboard UI includes auto-refresh, status timing, quick links, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - Dashboard health includes scheduler log summary when backend/data/task-logs/monitor_person_all.log is available.
+- Scheduler summary in GET /dashboard/health is usable.
+- Stale camera health logic in GET /dashboard/health is usable.
 - Unit tests and compile checks passed at this checkpoint.
 - sambung.txt is a private local handoff note and should not be committed.
 
 Next recommended work:
 
-1. Improve block_f_cam_8 metadata if not already committed
-2. Investigate block_f_cam_8 network/IP issue
-3. Later: face detection planning
-4. Later: number plate recognition planning
+1. Dashboard stale/offline visual polish
+2. Scheduler task enable decision
+3. Investigate block_f_cam_8 network/IP
+4. Later: face detection planning
+5. Later: number plate recognition planning
 
 ## Phase 1 - Backend Foundation
 
@@ -158,6 +161,25 @@ Important dashboard URLs:
 - /dashboard/cameras/{camera_id}/latest-event
 - /dashboard/cameras/{camera_id}/stats
 
+GET /dashboard/health currently includes:
+
+- camera totals
+- disabled/offline camera list
+- event health
+- scheduler summary
+- per-camera active/stale/no_recent_event/disabled/offline status
+- stale threshold minutes
+- stale_minutes
+- last_seen_source
+
+Current dashboard health status logic:
+
+- offline for disabled cameras with status offline
+- disabled for disabled cameras
+- active for enabled cameras with recent event/check
+- stale for enabled cameras with old event/check
+- no_recent_event for enabled cameras with no event/check yet
+
 ## Phase 7 - Production Deployment
 
 Status: Planned
@@ -223,10 +245,9 @@ Dashboard foundation currently includes:
 
 Next dashboard work:
 
-- Improve block_f_cam_8 metadata if not already committed
-- Add camera health from scheduler log
-- Enhance dashboard health card
-- Investigate block_f_cam_8 network/IP issue
+- Dashboard stale/offline visual polish
+- Scheduler task enable decision
+- Investigate block_f_cam_8 network/IP
 
 ## Roadmap Update - Lightweight Dashboard Data APIs
 
@@ -250,10 +271,9 @@ Dashboard data now available:
 
 Next dashboard work:
 
-- Improve block_f_cam_8 metadata if not already committed
-- Add camera health from scheduler log
-- Enhance dashboard health card
-- Investigate block_f_cam_8 network/IP issue
+- Dashboard stale/offline visual polish
+- Scheduler task enable decision
+- Investigate block_f_cam_8 network/IP
 
 ## Roadmap Update - Per-Camera Dashboard APIs
 
@@ -301,8 +321,9 @@ Dashboard UI currently includes:
 
 Next dashboard work:
 
-- Improve block_f_cam_8 metadata if not already committed
-- Investigate block_f_cam_8 network/IP issue
+- Dashboard stale/offline visual polish
+- Scheduler task enable decision
+- Investigate block_f_cam_8 network/IP
 - Later: face detection planning
 - Later: number plate recognition planning
 
@@ -377,9 +398,8 @@ Dashboard foundation currently includes:
 
 Next dashboard work:
 
-- Improve block_f_cam_8 metadata if not already committed
-- Add camera health from scheduler log
-- Enhance dashboard health card
-- Investigate block_f_cam_8 network/IP issue
+- Dashboard stale/offline visual polish
+- Scheduler task enable decision
+- Investigate block_f_cam_8 network/IP
 - Later: face detection planning
 - Later: number plate recognition planning

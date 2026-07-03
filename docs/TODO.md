@@ -4,12 +4,14 @@
 
 Latest confirmed commit:
 
-d18747e feat: add dashboard health endpoint
+95e246c feat: add stale camera health logic
 
 Checkpoint notes:
 
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
+- Scheduler summary in GET /dashboard/health is usable.
+- Stale camera health logic in GET /dashboard/health is usable.
 - Dashboard UI has auto-refresh, status timing, quick links, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - Unit tests pass with: python -m unittest discover -s tests -p "test_*.py" -v
 - Compile passes with: python -m compileall backend/app
@@ -22,6 +24,8 @@ Checkpoint notes:
 - [x] Add camera health from scheduler log
 - [x] Enhance dashboard health card
 - [x] Add stale camera health logic
+- [ ] Dashboard stale/offline visual polish
+- [ ] Scheduler task enable decision
 - [ ] Investigate block_f_cam_8 network/IP issue
 - [ ] Prepare face detection planning notes later
 - [ ] Prepare number plate recognition planning notes later
@@ -99,6 +103,8 @@ Camera list:
 - [x] Scheduler latest run and summary in dashboard UI Health card
 - [x] Improve latest successful check tracking per camera
 - [x] Add stale health badge support
+- [x] Document active/stale/no_recent_event/disabled/offline health logic
+- [ ] Dashboard stale/offline visual polish
 - [ ] Search by camera
 - [ ] Search by date
 - [ ] Search by event type
@@ -134,6 +140,9 @@ Camera list:
 - [ ] Improve block_f_cam_8 metadata if not already committed
 - [x] Add camera health from scheduler log
 - [x] Enhance dashboard health card
+- [x] Add stale camera health logic
+- [ ] Dashboard stale/offline visual polish
+- [ ] Scheduler task enable decision
 - [ ] Investigate block_f_cam_8 network/IP issue
 - [ ] Add event cooldown to avoid repeated evidence spam
 - [ ] Add per-camera confidence threshold

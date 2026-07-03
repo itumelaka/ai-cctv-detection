@@ -8,7 +8,7 @@ The project is currently focused on local backend development, RTSP camera acces
 
 Latest confirmed commit:
 
-d18747e feat: add dashboard health endpoint
+95e246c feat: add stale camera health logic
 
 Confirmed at this checkpoint:
 
@@ -22,6 +22,8 @@ Confirmed at this checkpoint:
 - GET /dashboard/health is usable.
 - Dashboard UI includes auto-refresh, last updated time, next refresh countdown, quick links, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - GET /dashboard/health includes a scheduler log summary from backend/data/task-logs/monitor_person_all.log when available.
+- Scheduler summary in GET /dashboard/health is usable.
+- Stale camera health logic in GET /dashboard/health is usable.
 - backend/app/dashboard_health.py exists.
 - tests/test_dashboard_health.py exists.
 - Unit tests pass with: python -m unittest discover -s tests -p "test_*.py" -v
@@ -30,12 +32,11 @@ Confirmed at this checkpoint:
 
 Next recommended work:
 
-1. Improve block_f_cam_8 metadata if not already committed
-2. Add camera health from scheduler log
-3. Enhance dashboard health card
-4. Investigate block_f_cam_8 network/IP issue
-5. Later: face detection planning
-6. Later: number plate recognition planning
+1. Dashboard stale/offline visual polish
+2. Scheduler task enable decision
+3. Investigate block_f_cam_8 network/IP
+4. Later: face detection planning
+5. Later: number plate recognition planning
 
 ## Current Status
 
@@ -137,6 +138,25 @@ GET /dashboard/events/latest?limit=10
 Dashboard endpoints are lightweight read-only endpoints. They read existing camera configuration, event logs, and evidence image metadata only. They do not run YOLO detection. Per-camera dashboard endpoints validate camera_id against the configured camera list.
 
 GET /dashboard/health also marks enabled cameras as active, stale, or no_recent_event based on the latest event/check time in backend/data/events.jsonl. The default stale threshold is 120 minutes. Disabled cameras with status offline are reported as offline.
+
+GET /dashboard/health currently includes:
+
+- camera totals
+- disabled/offline camera list
+- event health
+- scheduler summary
+- per-camera active/stale/no_recent_event/disabled/offline status
+- stale threshold minutes
+- stale_minutes
+- last_seen_source
+
+Current health status logic:
+
+- offline for disabled cameras with status offline
+- disabled for disabled cameras
+- active for enabled cameras with recent event/check
+- stale for enabled cameras with old event/check
+- no_recent_event for enabled cameras with no event/check yet
 
 Important dashboard URLs:
 
@@ -296,10 +316,11 @@ This is lighter and more suitable for AI detection.
 
 ## Next Milestones
 
-1. Improve block_f_cam_8 metadata if not already committed
-2. Investigate block_f_cam_8 network/IP issue
-3. Later: face detection planning
-4. Later: number plate recognition planning
+1. Dashboard stale/offline visual polish
+2. Scheduler task enable decision
+3. Investigate block_f_cam_8 network/IP
+4. Later: face detection planning
+5. Later: number plate recognition planning
 
 ## Repository
 

@@ -85,6 +85,16 @@ The dashboard parser reads existing log text only. It does not run YOLO detectio
 
 The /dashboard-ui Health card shows the latest scheduler run and summary.
 
+GET /dashboard/health also combines scheduler status with event-log based camera freshness. Per-camera health can report:
+
+- active
+- stale
+- no_recent_event
+- disabled
+- offline
+
+The default stale threshold is 120 minutes. Stale health is based on existing event/check timestamps from backend/data/events.jsonl.
+
 ## PowerShell Commands
 
 Enable the task:
