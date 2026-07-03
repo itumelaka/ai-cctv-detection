@@ -146,3 +146,23 @@ Camera list currently added:
 - [ ] Add per-camera latest event endpoint
 - [ ] Add per-camera stats endpoint
 - [ ] Add simple frontend dashboard page later
+
+## Completed on 2026-07-03 - Dashboard Summary Endpoint
+
+- [x] Add GET /dashboard/summary
+- [x] Register dashboard router in FastAPI main app
+- [x] Include camera total/enabled/disabled summary
+- [x] Include disabled camera list
+- [x] Include event statistics
+- [x] Include latest event summary
+- [x] Include latest 10 events
+- [x] Include dashboard API links
+
+## Next Dashboard TODO
+
+- [ ] Add GET /dashboard/evidence
+- [ ] Add GET /dashboard/cameras
+- [ ] Add GET /dashboard/events/latest
+- [ ] Add per-camera latest event endpoint
+- [ ] Add per-camera stats endpoint
+- [ ] Add simple frontend dashboard page later
