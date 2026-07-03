@@ -2,6 +2,7 @@ from functools import lru_cache
 import cv2
 from ultralytics import YOLO
 from app.camera import capture_frame
+from app.config import settings
 
 MODEL_NAME = "yolov8n.pt"
 PERSON_CLASS_NAME = "person"
@@ -17,7 +18,7 @@ def detect_objects(frame, class_name_filter: str | None = None):
 
     results = model.predict(
         source=frame,
-        conf=0.35,
+        conf=settings.yolo_confidence,
         verbose=False,
         device="cpu"
     )
@@ -61,6 +62,7 @@ def run_yolo_detection() -> dict:
     return {
         "status": "ok",
         "model": MODEL_NAME,
+        "confidence_threshold": settings.yolo_confidence,
         "camera": {
             "frame_width": width,
             "frame_height": height
@@ -79,6 +81,7 @@ def run_person_detection() -> dict:
         "status": "ok",
         "model": MODEL_NAME,
         "filter": PERSON_CLASS_NAME,
+        "confidence_threshold": settings.yolo_confidence,
         "camera": {
             "frame_width": width,
             "frame_height": height

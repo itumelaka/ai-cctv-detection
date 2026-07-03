@@ -14,6 +14,8 @@ class Settings:
     cctv_password: str = os.getenv("CCTV_PASSWORD", "")
     cctv_channel: str = os.getenv("CCTV_CHANNEL", "101")
 
+    yolo_confidence: float = float(os.getenv("YOLO_CONFIDENCE", "0.35"))
+
     @property
     def rtsp_url(self) -> str:
         username = quote(self.cctv_username, safe="")
