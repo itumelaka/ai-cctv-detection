@@ -10,6 +10,10 @@ Do not commit:
 
 - backend/.env
 - .env
+- Virtualenv folders such as .venv, .venv312, or backend/.venv
+- Runtime logs under backend/data/task-logs/
+- Evidence images under backend/data/evidence/
+- Local handoff notes
 - Any screenshot showing CCTV credentials
 - RTSP URLs that contain a username or password
 
@@ -97,3 +101,7 @@ For production:
 - Restrict folder permissions
 - Keep GitHub repo free from secrets
 - Backup only required evidence and logs
+
+## OneDrive Development Note
+
+When working inside OneDrive, pause sync during coding or Git work if Git, virtualenv, or project files are being modified. This helps avoid file-locking or partial-sync issues.

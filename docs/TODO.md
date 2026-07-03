@@ -4,12 +4,14 @@
 
 Latest confirmed commit:
 
-95e246c feat: add stale camera health logic
+8352f37
 
 Checkpoint notes:
 
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
+- Scheduler task BAT resolves project root dynamically.
+- Scheduler task supports .venv312 before falling back to .venv or python from PATH.
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
 - Dashboard UI has auto-refresh, status timing, quick links, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.

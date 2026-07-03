@@ -4,7 +4,7 @@
 
 Latest confirmed commit:
 
-95e246c feat: add stale camera health logic
+8352f37
 
 Checkpoint summary:
 
@@ -20,6 +20,7 @@ Checkpoint summary:
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
 - Dashboard stale/offline visual polish is usable.
+- Scheduler BAT now resolves project root dynamically and supports .venv312 before falling back to .venv or python from PATH.
 - Unit tests and compile checks passed at this checkpoint.
 - sambung.txt is a private local handoff note and should not be committed.
 
@@ -79,7 +80,7 @@ Run AI CCTV monitoring automatically on an always-on machine.
 Planned features:
 
 - Multi-camera monitor script
-- Windows Task Scheduler configuration
+- Windows Task Scheduler configuration - operational checkpoint completed
 - Runtime cleanup script
 - Log rotation
 - Evidence retention policy
@@ -418,3 +419,31 @@ Health card visual summary now includes:
 Camera cards now show health_status, stale_minutes, stale_threshold_minutes, last_seen_source, and health_note when available.
 
 Badge behavior now maps active to success, stale and no_recent_event to warning, offline to danger, and disabled to muted.
+
+## Roadmap Update - Scheduler Laptop Environment Fix
+
+Status: Completed
+
+The scheduler BAT launcher now resolves the project root dynamically from the script location.
+
+Python selection order:
+
+1. .venv312\Scripts\python.exe
+2. .venv\Scripts\python.exe
+3. python from PATH
+
+This supports laptop environments where the old .venv is missing or broken but .venv312 exists.
+
+Current expected healthy dashboard state after a successful scheduler run:
+
+- total cameras: 10
+- enabled: 9
+- disabled/offline: 1
+- active: 9
+- stale: 0
+- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+
+Next operational decisions:
+
+- Decide when to enable the scheduler task
+- Investigate block_f_cam_8 / 192.168.40.20 only if it should be re-enabled later

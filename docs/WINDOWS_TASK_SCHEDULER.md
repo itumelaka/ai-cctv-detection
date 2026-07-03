@@ -15,6 +15,12 @@ Current state:
 - Uses the multi-camera hidden VBS launcher
 - Checks enabled cameras from backend/config/cameras.json
 - BAT launcher returns 0 to Task Scheduler so person detection or camera check results do not appear as Task Scheduler failures
+- BAT launcher resolves the project root dynamically from the script location
+- Python selection order:
+  1. .venv312\Scripts\python.exe
+  2. .venv\Scripts\python.exe
+  3. python from PATH
+- This fixes laptop environments where old .venv is missing or broken but .venv312 exists
 
 ## Scheduler Scripts
 
@@ -95,7 +101,40 @@ GET /dashboard/health also combines scheduler status with event-log based camera
 
 The default stale threshold is 120 minutes. Stale health is based on existing event/check timestamps from backend/data/events.jsonl.
 
+Current expected healthy dashboard state after a successful scheduler run:
+
+- Dashboard UI: http://127.0.0.1:8000/dashboard-ui
+- Health endpoint: http://127.0.0.1:8000/dashboard/health
+- total cameras: 10
+- enabled: 9
+- disabled/offline: 1
+- active: 9
+- stale: 0
+- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+
+Known camera note:
+
+- block_f_cam_8 / ITU BLOCK F CAM8 remains disabled/offline.
+- IP: 192.168.40.20.
+- Ping and RTSP port 554 are not reachable.
+- Do not treat it as a system failure unless intentionally re-enabled later.
+
+Operational notes:
+
+- RTSP timeouts may happen temporarily if the CCTV network is unstable.
+- Avoid overlapping scheduler runs if check-all takes too long.
+- When working inside OneDrive, pause sync during coding or Git work if Git, virtualenv, or project files are being modified.
+- Never commit backend/.env, virtualenv folders, logs, evidence images, or local handoff notes.
+
 ## PowerShell Commands
+
+Check task state:
+
+Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
+
+Show task info:
+
+Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Person Monitor"
 
 Enable the task:
 
@@ -105,6 +144,6 @@ Disable the task:
 
 Disable-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
 
-Check task state:
+Start the task manually:
 
-Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
+Start-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"

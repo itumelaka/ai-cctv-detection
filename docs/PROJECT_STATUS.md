@@ -6,7 +6,7 @@ Last updated: 2026-07-03
 
 Latest confirmed commit:
 
-95e246c feat: add stale camera health logic
+8352f37
 
 Confirmed at this checkpoint:
 
@@ -20,6 +20,8 @@ Confirmed at this checkpoint:
 - GET /dashboard/health is usable.
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
+- Scheduler BAT resolves the project root dynamically from its script location.
+- Scheduler BAT uses .venv312 first, then .venv, then python from PATH.
 - Dashboard UI includes auto-refresh every 30 seconds, last updated time, next refresh countdown, quick links/buttons, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - Dashboard UI includes stale/offline health counts and camera freshness details.
 - backend/app/dashboard_health.py exists.
@@ -87,6 +89,8 @@ Current camera status:
 
 Important dashboard URLs:
 
+- http://127.0.0.1:8000/dashboard-ui
+- http://127.0.0.1:8000/dashboard/health
 - /dashboard-ui
 - /dashboard/summary
 - /dashboard/health
@@ -124,6 +128,28 @@ Current scheduler status:
 - BAT launcher: backend/scripts/run_monitor_person_all_once.bat
 - Hidden VBS launcher: backend/scripts/run_monitor_person_all_once_hidden.vbs
 - Runtime log: backend/data/task-logs/monitor_person_all.log
+- BAT launcher resolves project root dynamically from script location
+- Python selection order:
+  1. .venv312\Scripts\python.exe
+  2. .venv\Scripts\python.exe
+  3. python from PATH
+- This fixes laptop environments where old .venv is missing or broken but .venv312 exists
+
+Current expected healthy dashboard state after a successful scheduler run:
+
+- total cameras: 10
+- enabled: 9
+- disabled/offline: 1
+- active: 9
+- stale: 0
+- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+
+Known disabled/offline camera:
+
+- block_f_cam_8 / ITU BLOCK F CAM8
+- IP: 192.168.40.20
+- Reason: ping and RTSP port 554 are not reachable
+- Do not treat this as a system failure unless the camera is intentionally re-enabled later
 
 ## Confirmed Working Camera
 

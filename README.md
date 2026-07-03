@@ -8,7 +8,7 @@ The project is currently focused on local backend development, RTSP camera acces
 
 Latest confirmed commit:
 
-95e246c feat: add stale camera health logic
+8352f37
 
 Confirmed at this checkpoint:
 
@@ -24,6 +24,8 @@ Confirmed at this checkpoint:
 - GET /dashboard/health includes a scheduler log summary from backend/data/task-logs/monitor_person_all.log when available.
 - Scheduler summary in GET /dashboard/health is usable.
 - Stale camera health logic in GET /dashboard/health is usable.
+- Scheduler BAT resolves the project root from its own script location.
+- Scheduler BAT uses .venv312 first, then .venv, then python from PATH.
 - backend/app/dashboard_health.py exists.
 - tests/test_dashboard_health.py exists.
 - Unit tests pass with: python -m unittest discover -s tests -p "test_*.py" -v
@@ -175,6 +177,10 @@ Open this URL after starting the backend:
 
 http://127.0.0.1:8000/dashboard-ui
 
+Health endpoint:
+
+http://127.0.0.1:8000/dashboard/health
+
 The dashboard UI is a simple browser page that consumes the dashboard API endpoints only. It shows camera totals, disabled cameras, latest events, clickable evidence thumbnails, camera status badges, per-camera event counts, a health card, scheduler latest run and summary, per-camera health badges, stale/offline counts, last seen source, stale minutes, health notes, last updated time, and a 30-second auto-refresh countdown.
 
 The page also includes quick links for:
@@ -197,6 +203,12 @@ Current status:
 - Intentionally Disabled
 - Uses the multi-camera monitor launcher
 - BAT launcher returns 0 to Task Scheduler so attention events are not marked as task failures
+- BAT launcher resolves the project root dynamically from its script location
+- Python selection order:
+  1. .venv312\Scripts\python.exe
+  2. .venv\Scripts\python.exe
+  3. python from PATH
+- This supports laptop environments where the old .venv is missing or broken but .venv312 exists
 
 Scheduler script paths:
 
@@ -226,6 +238,51 @@ Per-camera dashboard health includes:
 - stale_minutes
 - stale_threshold_minutes
 - last_seen_source
+
+Current expected healthy dashboard state after a successful scheduler run:
+
+- total cameras: 10
+- enabled: 9
+- disabled/offline: 1
+- active: 9
+- stale: 0
+- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+
+Known camera note:
+
+- block_f_cam_8 / ITU BLOCK F CAM8 remains disabled/offline.
+- IP: 192.168.40.20.
+- Ping and RTSP port 554 are not reachable.
+- Do not treat this camera as a system failure unless it is intentionally re-enabled later.
+
+## Scheduler PowerShell Commands
+
+Check task state:
+
+Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
+
+Show task info:
+
+Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Person Monitor"
+
+Enable the task:
+
+Enable-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
+
+Disable the task:
+
+Disable-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
+
+Start the task manually:
+
+Start-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
+
+Operational notes:
+
+- RTSP timeouts may happen temporarily if the CCTV network is unstable.
+- Avoid overlapping scheduler runs if check-all takes too long.
+- When working inside OneDrive, pause sync during coding or Git work if Git, virtualenv, or project files are being modified.
+- Never commit backend/.env, virtualenv folders, logs, evidence images, or local handoff notes.
 
 ## Event Flow
 
