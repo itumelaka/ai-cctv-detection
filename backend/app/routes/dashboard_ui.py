@@ -316,6 +316,20 @@ def dashboard_ui():
       overflow-wrap: anywhere;
     }
 
+    .evidence-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .evidence-note {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
     a {
       color: var(--accent);
       font-weight: 700;
@@ -486,6 +500,16 @@ def dashboard_ui():
             <div class="section-title">
               <h2>Recent Evidence</h2>
             </div>
+            <div class="evidence-actions">
+              <button type="button" id="refreshEvidenceButton">Refresh Evidence</button>
+              <button type="button" id="copyEvidencePathButton">Copy Evidence Folder Path</button>
+            </div>
+            <div id="evidenceFolderNote" class="evidence-note">
+              Evidence folder: \\\\192.168.1.254\\ituaicctv-evidence
+            </div>
+            <div class="evidence-note">
+              Evidence images are stored on the Windows Server. Paste this path into File Explorer if browser blocks direct folder links.
+            </div>
             <div id="evidenceList" class="list"></div>
           </div>
         </aside>
@@ -508,6 +532,7 @@ def dashboard_ui():
       evidence: "/dashboard/evidence?limit=8",
       health: "/dashboard/health"
     };
+    const evidenceFolderPath = "\\\\\\\\192.168.1.254\\\\ituaicctv-evidence";
     const refreshIntervalSeconds = 30;
     let nextRefreshAt = Date.now() + refreshIntervalSeconds * 1000;
     let isLoading = false;
@@ -854,6 +879,29 @@ def dashboard_ui():
       });
     }
 
+    async function refreshEvidence() {
+      const note = el("evidenceFolderNote");
+      note.textContent = "Refreshing evidence...";
+
+      try {
+        renderEvidence(await getJson(endpoints.evidence));
+        note.textContent = `Evidence folder: ${evidenceFolderPath}`;
+      } catch (error) {
+        note.textContent = `Evidence refresh failed: ${error.message}`;
+      }
+    }
+
+    async function copyEvidenceFolderPath() {
+      const note = el("evidenceFolderNote");
+
+      try {
+        await navigator.clipboard.writeText(evidenceFolderPath);
+        note.textContent = `Copied: ${evidenceFolderPath}`;
+      } catch {
+        note.textContent = `Copy blocked. Evidence folder: ${evidenceFolderPath}`;
+      }
+    }
+
     async function renderCameras(camerasData, healthData) {
       const list = el("cameraList");
       clearNode(list);
@@ -976,6 +1024,8 @@ def dashboard_ui():
     }
 
     el("refreshButton").addEventListener("click", loadDashboard);
+    el("refreshEvidenceButton").addEventListener("click", refreshEvidence);
+    el("copyEvidencePathButton").addEventListener("click", copyEvidenceFolderPath);
     setInterval(() => {
       updateRefreshStatus();
 
