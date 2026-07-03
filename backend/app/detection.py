@@ -1,7 +1,7 @@
 from functools import lru_cache
 import cv2
 from ultralytics import YOLO
-from app.camera import capture_frame
+from app.camera import capture_frame, capture_frame_for_camera
 from app.config import settings
 
 MODEL_NAME = "yolov8n.pt"
@@ -54,12 +54,10 @@ def detect_objects(frame, class_name_filter: str | None = None):
     return detections
 
 
-def run_yolo_detection() -> dict:
-    frame = capture_frame()
+def _build_detection_response(frame, detections, camera_info: dict | None = None, filter_name: str | None = None):
     height, width = frame.shape[:2]
-    detections = detect_objects(frame)
 
-    return {
+    response = {
         "status": "ok",
         "model": MODEL_NAME,
         "confidence_threshold": settings.yolo_confidence,
@@ -70,26 +68,45 @@ def run_yolo_detection() -> dict:
         "detections_count": len(detections),
         "detections": detections
     }
+
+    if filter_name:
+        response["filter"] = filter_name
+
+    if filter_name == PERSON_CLASS_NAME:
+        response["person_detected"] = len(detections) > 0
+
+    if camera_info:
+        response["camera"].update({
+            "id": camera_info.get("id"),
+            "name": camera_info.get("name"),
+            "host": camera_info.get("host"),
+            "channel": camera_info.get("channel")
+        })
+
+    return response
+
+
+def run_yolo_detection() -> dict:
+    frame = capture_frame()
+    detections = detect_objects(frame)
+    return _build_detection_response(frame, detections)
 
 
 def run_person_detection() -> dict:
     frame = capture_frame()
-    height, width = frame.shape[:2]
     detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    return _build_detection_response(frame, detections, filter_name=PERSON_CLASS_NAME)
 
-    return {
-        "status": "ok",
-        "model": MODEL_NAME,
-        "filter": PERSON_CLASS_NAME,
-        "confidence_threshold": settings.yolo_confidence,
-        "camera": {
-            "frame_width": width,
-            "frame_height": height
-        },
-        "detections_count": len(detections),
-        "person_detected": len(detections) > 0,
-        "detections": detections
-    }
+
+def run_person_detection_for_camera(camera: dict) -> dict:
+    frame = capture_frame_for_camera(camera)
+    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    return _build_detection_response(
+        frame,
+        detections,
+        camera_info=camera,
+        filter_name=PERSON_CLASS_NAME
+    )
 
 
 def _draw_detections(frame, detections):
@@ -137,6 +154,13 @@ def run_yolo_snapshot_jpeg() -> bytes:
 
 def run_person_snapshot_jpeg() -> bytes:
     frame = capture_frame()
+    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    frame = _draw_detections(frame, detections)
+    return _encode_jpeg(frame)
+
+
+def run_person_snapshot_jpeg_for_camera(camera: dict) -> bytes:
+    frame = capture_frame_for_camera(camera)
     detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
     frame = _draw_detections(frame, detections)
     return _encode_jpeg(frame)
