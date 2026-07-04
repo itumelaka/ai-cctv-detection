@@ -8,6 +8,9 @@ MODEL_NAME = "yolov8n.pt"
 PERSON_CLASS_NAME = "person"
 PERSON_CROP_PADDING_PX = 32
 PERSON_CROP_PANEL_MIN_WIDTH = 320
+FACE_READY_MIN_FRAME_HEIGHT_PX = 720
+FACE_READY_MIN_PERSON_BOX_WIDTH_PX = 120
+FACE_READY_MIN_PERSON_BOX_HEIGHT_PX = 220
 
 
 @lru_cache(maxsize=1)
@@ -191,6 +194,42 @@ def _crop_detection(frame, detection, padding: int = PERSON_CROP_PADDING_PX):
     return frame[y1:y2, x1:x2].copy()
 
 
+def _person_box_size(detection):
+    box = detection["box"]
+    width = max(0, float(box["x2"]) - float(box["x1"]))
+    height = max(0, float(box["y2"]) - float(box["y1"]))
+    return width, height
+
+
+def _face_recognition_readiness(frame, detection):
+    frame_height, _ = frame.shape[:2]
+    box_width, box_height = _person_box_size(detection)
+    reasons = ["face not detected yet"]
+
+    if frame_height < FACE_READY_MIN_FRAME_HEIGHT_PX:
+        reasons.append("low source resolution")
+
+    if (
+        box_width < FACE_READY_MIN_PERSON_BOX_WIDTH_PX
+        or box_height < FACE_READY_MIN_PERSON_BOX_HEIGHT_PX
+    ):
+        reasons.append("person crop too small")
+
+    return {
+        "face_recognition_ready": False,
+        "reasons": reasons
+    }
+
+
+def _face_readiness_warnings(readiness):
+    reasons = readiness.get("reasons", [])
+
+    if "low source resolution" in reasons or "person crop too small" in reasons:
+        return ["LOW-RES CROP", "FACE ID NOT SUITABLE"]
+
+    return ["FACE ID NOT SUITABLE"]
+
+
 def _resize_into_panel(image, panel_width: int, panel_height: int):
     image_height, image_width = image.shape[:2]
 
@@ -211,6 +250,7 @@ def _resize_into_panel(image, panel_width: int, panel_height: int):
 def _build_person_crop_panel(frame, detection):
     height, width = frame.shape[:2]
     label_height = 34
+    warning_height = 46
     panel_width = max(PERSON_CROP_PANEL_MIN_WIDTH, min(width, height))
     panel = cv2.copyMakeBorder(
         frame[:height, :1],
@@ -228,7 +268,7 @@ def _build_person_crop_panel(frame, detection):
     if crop is None:
         return panel
 
-    available_height = height - label_height
+    available_height = max(1, height - label_height - warning_height)
     resized_crop = _resize_into_panel(crop, panel_width, available_height)
 
     if resized_crop is None:
@@ -239,16 +279,29 @@ def _build_person_crop_panel(frame, detection):
     y_offset = label_height + max(0, (available_height - crop_height) // 2)
     panel[y_offset:y_offset + crop_height, x_offset:x_offset + crop_width] = resized_crop
 
-    label = f"{detection['class_name']} {detection['confidence']:.2f}"
+    label = f"PERSON CROP  {detection['confidence']:.2f}"
     cv2.putText(
         panel,
-        f"ZOOM CROP  {label}",
+        label,
         (12, 23),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.55,
         (255, 255, 255),
         2
     )
+
+    readiness = _face_recognition_readiness(frame, detection)
+    warning_lines = _face_readiness_warnings(readiness)
+    for index, warning in enumerate(reversed(warning_lines)):
+        cv2.putText(
+            panel,
+            warning,
+            (12, height - 12 - (index * 18)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (0, 220, 255),
+            1
+        )
 
     return panel
 

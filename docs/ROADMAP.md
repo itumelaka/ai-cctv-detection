@@ -18,6 +18,8 @@ Operational foundation:
 - One camera remains disabled/offline: `block_f_cam_8 / ITU BLOCK F CAM8`.
 - Evidence is saved only for `person_detected=True`.
 - New evidence is a composite full-frame-plus-zoom-crop image.
+- The person crop is review evidence only. Low-resolution sub-stream crops are not suitable proof for face identity recognition.
+- Fullscreen TV Command Center mode is available at `/dashboard-tv`.
 
 ## Forward Backlog
 
@@ -31,8 +33,8 @@ Operational foundation:
 8. Human review workflow: true positive, false positive, ignore, download.
 9. AI risk score: confidence, zone, after-hours, camera importance.
 10. After-hours detection.
-11. Fullscreen command center / TV mode.
-12. Face detection and safe opt-in face recognition roadmap.
+11. Improve fullscreen command center / TV mode after real TV review.
+12. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
 
 ## Current Checkpoint
 
@@ -166,6 +168,8 @@ Before Phase 4 implementation:
 
 - Finish person detection tuning and review false-positive examples.
 - Keep person evidence snapshots with bounding boxes enabled for review.
+- Keep fast person detection on CCTV sub-streams where useful, but capture a high-resolution main-stream or snapshot frame after person_detected=True before attempting face detection or recognition.
+- Treat face_recognition_ready as false until a suitable face is detected in high-resolution evidence. Low-resolution person crops may support human review but should not be used for identity decisions.
 - Define retention, approval, access, and audit rules for any face data.
 
 ## Phase 5 - Vehicle and Number Plate Recognition
@@ -213,9 +217,10 @@ Planned features:
 - LIVE AI MONITORING indicator and live visual effects - completed
 - Section scroll navigation - completed
 - Evidence gallery with clearer composite evidence - completed
+- Fullscreen TV Command Center mode at /dashboard-tv - completed
 - Search and filter
 - Human review actions
-- Fullscreen command center / TV mode
+- TV mode visual tuning after wall-monitor review
 - Future face recognition view
 - Future plate recognition view
 

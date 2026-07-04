@@ -12,6 +12,7 @@ Repository and runtime:
 - Production server path: C:\ituaicctv
 - Local laptop development path: C:\Users\burnk\OneDrive\Documents-assets\ai-cctv-detection
 - Production dashboard: http://192.168.1.254:8000/dashboard-ui
+- Fullscreen TV command center: http://192.168.1.254:8000/dashboard-tv
 - GitHub Pages is no longer the primary production dashboard. Daily operation uses the backend-served /dashboard-ui page.
 
 Latest deployed checkpoints:
@@ -110,6 +111,9 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 - PERSON_CONFIDENCE_THRESHOLD defaults to 0.60. This reduces false positives but can miss distant or low-light people.
 - Telegram person alerts include confidence and active threshold when available.
 - New person evidence uses a clearer composite image: full CCTV frame with bounding boxes plus a zoom crop of the highest-confidence person.
+- The crop is labelled as person review evidence, not face identity evidence. Low-resolution sub-stream crops may be marked LOW-RES CROP / FACE ID NOT SUITABLE.
+- Face recognition readiness is false by default until a face is detected from suitable high-resolution evidence. No identity recognition or face database is implemented.
+- Future reliable face recognition should capture a high-resolution main-stream or snapshot frame after person_detected=True while keeping fast person detection on the sub-stream.
 - Composite evidence keeps the existing filename pattern: person_detected_<camera_id>_<timestamp>.jpg
 - If composite generation fails, the fallback is the boxed full-frame evidence image.
 - Telegram sends the saved evidence image, so new detections use the clearer composite.
@@ -131,6 +135,18 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 - hover/glow effects
 - person-detected pulse/glow
 - prefers-reduced-motion support
+
+/dashboard-tv is available for fullscreen office/security-monitor display. It reuses the same dashboard APIs and is optimized for 16:9 TV layouts with:
+
+- large readable status cards
+- LIVE AI MONITORING badge
+- latest AI alert panel
+- latest evidence preview using object-fit contain
+- compact event timeline
+- compact camera health strip
+- 30-second auto-refresh
+- Fullscreen button and F keyboard shortcut
+- R keyboard shortcut for refresh
 
 Dashboard navigation:
 
@@ -305,6 +321,7 @@ GET /events/evidence/{filename}
 Dashboard:
 
 GET /dashboard-ui
+GET /dashboard-tv
 GET /dashboard/summary
 GET /dashboard/health
 GET /dashboard/evidence

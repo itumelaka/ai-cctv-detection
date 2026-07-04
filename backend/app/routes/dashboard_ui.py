@@ -1186,10 +1186,14 @@ def dashboard_ui():
       addField(fields, "Severity", text(latest.severity));
       addField(fields, "Confidence", formatConfidence(maxConfidence(latest)));
       addField(fields, "Evidence", latest.evidence_path ? "Saved" : "None");
+      addField(fields, "Recognition", "High-res face evidence required");
 
       const message = document.createElement("div");
       message.className = "meta";
-      message.textContent = text(latest.message, "");
+      const recognitionNote = latest.person_detected
+        ? "Low-res CCTV crop may not be suitable for identity recognition."
+        : "Recognition requires high-resolution face evidence.";
+      message.textContent = `${text(latest.message, "")} ${recognitionNote}`.trim();
 
       box.className = latest.person_detected ? "latest-event-card person-alert" : "latest-event-card";
       box.append(title, fields, message);
@@ -1390,7 +1394,7 @@ def dashboard_ui():
 
         const status = document.createElement("div");
         status.className = "meta";
-        status.textContent = "Detection status: person evidence image";
+        status.textContent = "Detection status: person evidence image. Recognition requires high-resolution face evidence.";
 
         item.append(head, meta, status);
         list.appendChild(item);
@@ -1579,6 +1583,780 @@ def dashboard_ui():
       }
     }, 1000);
     loadDashboard();
+  </script>
+</body>
+</html>
+"""
+
+
+@router.get("/dashboard-tv", response_class=HTMLResponse)
+def dashboard_tv():
+    return """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITU AI CCTV TV Command Center</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05080d;
+      --panel: #0e1722;
+      --panel-2: #121f2c;
+      --text: #eef7ff;
+      --muted: #9fb1c4;
+      --line: #25364a;
+      --accent: #23d8c4;
+      --blue: #5da7ff;
+      --ok: #37e48b;
+      --warn: #ffc857;
+      --danger: #ff5f6d;
+      --soft-ok: rgba(55, 228, 139, 0.14);
+      --soft-warn: rgba(255, 200, 87, 0.16);
+      --soft-danger: rgba(255, 95, 109, 0.18);
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(35, 216, 196, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 10%, rgba(93, 167, 255, 0.12), transparent 28%),
+        linear-gradient(180deg, #07101a, var(--bg));
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 80%);
+    }
+
+    .screen {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: 82px 1fr 230px;
+      gap: 14px;
+      width: 100vw;
+      height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar, .panel, .metric, .camera-card, .event-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(18, 31, 44, 0.95), rgba(9, 15, 23, 0.95));
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 18px;
+      overflow: hidden;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 2.5vw, 48px);
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      color: var(--muted);
+      font-size: clamp(14px, 1.2vw, 20px);
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: clamp(12px, 0.9vw, 16px);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .badge.live {
+      color: #dfffee;
+      background: var(--soft-ok);
+      box-shadow: 0 0 22px rgba(55, 228, 139, 0.16);
+    }
+
+    .badge.neutral { color: var(--accent); background: rgba(35, 216, 196, 0.12); }
+    .badge.ok { color: var(--ok); background: var(--soft-ok); }
+    .badge.warn { color: var(--warn); background: var(--soft-warn); }
+    .badge.danger { color: var(--danger); background: var(--soft-danger); }
+    .badge.muted { color: var(--muted); background: rgba(159, 177, 196, 0.12); }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 0 currentColor;
+    }
+
+    .badge.live .dot, .event-card.person .dot {
+      animation: pulse 1.8s infinite;
+    }
+
+    button, a.button-link {
+      min-height: 36px;
+      border: 1px solid rgba(35, 216, 196, 0.62);
+      border-radius: 8px;
+      background: rgba(35, 216, 196, 0.13);
+      color: var(--text);
+      padding: 7px 11px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1.2fr) minmax(360px, 0.85fr);
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .left-stack, .center-stack, .right-stack {
+      display: grid;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .left-stack {
+      grid-template-rows: repeat(4, minmax(0, 1fr)) 1.25fr;
+    }
+
+    .center-stack {
+      grid-template-rows: minmax(0, 1fr) 150px;
+    }
+
+    .right-stack {
+      grid-template-rows: minmax(0, 1fr) 150px;
+    }
+
+    .metric, .panel {
+      padding: 16px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .metric-label, .panel-label {
+      color: var(--muted);
+      font-size: clamp(12px, 0.95vw, 17px);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      font-size: clamp(34px, 3.5vw, 66px);
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .metric-detail {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: clamp(13px, 1vw, 18px);
+      overflow-wrap: anywhere;
+    }
+
+    .latest-event {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      border-color: rgba(35, 216, 196, 0.35);
+    }
+
+    .latest-event.person {
+      border-color: rgba(255, 95, 109, 0.72);
+      background: linear-gradient(135deg, rgba(255, 95, 109, 0.19), rgba(18, 31, 44, 0.95));
+      box-shadow: 0 0 0 1px rgba(255, 95, 109, 0.22), 0 24px 70px rgba(255, 95, 109, 0.16);
+      animation: alertGlow 2.4s ease-in-out infinite;
+    }
+
+    .event-title {
+      margin: 0;
+      font-size: clamp(44px, 5vw, 92px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .event-fields {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-content: end;
+    }
+
+    .field {
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      padding: 12px;
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-size: clamp(12px, 0.9vw, 16px);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .field-value {
+      margin-top: 6px;
+      font-size: clamp(18px, 1.45vw, 28px);
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .evidence-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .evidence-link {
+      display: block;
+      min-height: 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    .evidence-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 160px;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      text-align: center;
+      padding: 18px;
+      font-size: clamp(18px, 1.5vw, 28px);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .event-card {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 54px;
+      padding: 10px 12px;
+      box-shadow: none;
+      background: rgba(10, 17, 26, 0.7);
+    }
+
+    .event-card.person {
+      border-color: rgba(255, 95, 109, 0.55);
+      background: linear-gradient(90deg, rgba(255, 95, 109, 0.16), rgba(10, 17, 26, 0.78));
+    }
+
+    .event-name {
+      font-size: clamp(16px, 1.1vw, 22px);
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .event-meta {
+      color: var(--muted);
+      font-size: clamp(12px, 0.85vw, 16px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .camera-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .camera-card {
+      padding: 12px;
+      box-shadow: none;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .camera-title {
+      font-size: clamp(15px, 1vw, 20px);
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .camera-meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: clamp(12px, 0.85vw, 15px);
+      overflow-wrap: anywhere;
+    }
+
+    .warning {
+      color: var(--danger);
+      font-weight: 900;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 currentColor; }
+      70% { box-shadow: 0 0 0 9px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
+    @keyframes alertGlow {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(255, 95, 109, 0.18), 0 24px 70px rgba(255, 95, 109, 0.13); }
+      50% { box-shadow: 0 0 0 1px rgba(255, 95, 109, 0.36), 0 24px 78px rgba(255, 95, 109, 0.24); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      body { overflow: auto; }
+      .screen {
+        height: auto;
+        min-height: 100vh;
+        grid-template-rows: auto auto auto;
+      }
+      .main-grid, .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+      .left-stack, .center-stack, .right-stack {
+        grid-template-rows: none;
+      }
+      .camera-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .event-fields {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header class="topbar">
+      <div class="brand-row">
+        <h1>ITU AI CCTV Command Center</h1>
+        <span class="badge live"><span class="dot" aria-hidden="true"></span>LIVE AI MONITORING</span>
+        <span class="badge neutral">Production Server</span>
+      </div>
+      <div class="top-actions">
+        <span id="loadStatus">Loading...</span>
+        <span id="countdown">Next refresh in 30s</span>
+        <button type="button" id="refreshButton">Refresh</button>
+        <button type="button" id="fullscreenButton">Fullscreen</button>
+        <a class="button-link" href="/dashboard-ui">Normal dashboard</a>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <section class="left-stack" aria-label="Health summary">
+        <div class="metric">
+          <div class="metric-label">Total Cameras</div>
+          <div id="totalCameras" class="metric-value">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Enabled</div>
+          <div id="enabledCameras" class="metric-value">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Active</div>
+          <div id="activeCameras" class="metric-value">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Offline / Disabled</div>
+          <div id="offlineDisabledCameras" class="metric-value">-</div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Scheduler</div>
+          <div id="schedulerStatus" class="metric-value" style="font-size: clamp(26px, 2.4vw, 46px);">-</div>
+          <div id="schedulerSummary" class="metric-detail">-</div>
+        </div>
+      </section>
+
+      <section class="center-stack">
+        <div id="latestEventPanel" class="panel latest-event">
+          <div class="panel-label">Latest AI Event</div>
+          <h2 id="latestEventTitle" class="event-title">Loading...</h2>
+          <div id="latestEventFields" class="event-fields"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Camera Health Strip</div>
+          <div id="cameraStrip" class="camera-strip"></div>
+        </div>
+      </section>
+
+      <section class="right-stack">
+        <div class="panel evidence-panel">
+          <div class="panel-label">Latest Evidence Preview</div>
+          <div id="evidencePreview"></div>
+          <div id="evidenceMeta" class="metric-detail">Waiting for evidence...</div>
+        </div>
+        <div class="panel">
+          <div class="panel-label">Health Notes</div>
+          <div id="healthNotes" class="metric-detail">Loading production health...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottom-grid">
+      <section class="panel">
+        <div class="panel-label">Event Timeline</div>
+        <div id="timeline" class="timeline"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-label">Dashboard Status</div>
+        <div id="errorBox" class="metric-detail">Data stream initializing.</div>
+      </section>
+    </footer>
+  </div>
+
+  <script>
+    const endpoints = {
+      summary: "/dashboard/summary",
+      cameras: "/dashboard/cameras",
+      latestEvents: "/dashboard/events/latest?limit=10",
+      evidence: "/dashboard/evidence?limit=8",
+      health: "/dashboard/health"
+    };
+    const refreshIntervalSeconds = 30;
+    let nextRefreshAt = Date.now() + refreshIntervalSeconds * 1000;
+    let loading = false;
+
+    const el = (id) => document.getElementById(id);
+
+    function text(value, fallback = "-") {
+      return value === null || value === undefined || value === "" ? fallback : String(value);
+    }
+
+    function formatTime(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+    }
+
+    function numberValue(value) {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function maxConfidence(event) {
+      const detections = event?.detections || [];
+      const confidences = detections
+        .map((detection) => numberValue(detection?.confidence))
+        .filter((confidence) => confidence !== null);
+      if (confidences.length) return Math.max(...confidences).toFixed(2);
+      const direct = numberValue(event?.highest_confidence ?? event?.max_confidence ?? event?.confidence);
+      return direct === null ? "-" : direct.toFixed(2);
+    }
+
+    function cameraId(event) {
+      const nested = event?.camera?.id || event?.camera?.camera_id || "";
+      if (nested && nested !== "unknown_camera") return nested;
+      return event?.camera_id || event?.camera_id_from_log || "";
+    }
+
+    function cameraMap(camerasData) {
+      const map = {};
+      (camerasData?.cameras || []).forEach((camera) => {
+        const id = camera.camera_id || camera.id;
+        const label = camera.camera_name || camera.name || id;
+        if (id && label) map[id] = label;
+      });
+      return map;
+    }
+
+    function cameraLabel(event, map) {
+      const id = cameraId(event);
+      const label = event?.camera_name || event?.name || event?.camera?.camera_name || event?.camera?.name || map[id] || id;
+      return label && label !== "unknown_camera" ? label : "Unknown camera";
+    }
+
+    function eventTone(event) {
+      return event?.person_detected || event?.event_type === "person_detected" ? "danger" : "ok";
+    }
+
+    function badge(label, tone) {
+      return `<span class="badge ${tone || "neutral"}"><span class="dot" aria-hidden="true"></span>${label}</span>`;
+    }
+
+    function evidenceUrl(image) {
+      if (image?.url) return image.url;
+      if (image?.filename) return `/events/evidence/${encodeURIComponent(image.filename)}`;
+      return "";
+    }
+
+    async function getJson(url) {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+      return response.json();
+    }
+
+    function updateCountdown() {
+      const remaining = Math.max(0, Math.ceil((nextRefreshAt - Date.now()) / 1000));
+      el("countdown").textContent = `Next refresh in ${remaining}s`;
+    }
+
+    function renderMetrics(camerasData, healthData) {
+      const totals = camerasData?.totals || {};
+      const counts = { active: 0, stale: 0, no_recent_event: 0, offline: 0, disabled: 0 };
+      (healthData?.per_camera || []).forEach((camera) => {
+        if (Object.prototype.hasOwnProperty.call(counts, camera.health_status)) counts[camera.health_status] += 1;
+      });
+      el("totalCameras").textContent = text(totals.total);
+      el("enabledCameras").textContent = text(totals.enabled);
+      el("activeCameras").textContent = counts.active;
+      el("offlineDisabledCameras").textContent = counts.offline + counts.disabled;
+      const scheduler = healthData?.scheduler || {};
+      const summary = text(scheduler.latest_summary);
+      const ok = summary.toLowerCase().includes("ok");
+      el("schedulerStatus").innerHTML = ok ? badge("OK", "ok") : badge("CHECK", "warn");
+      el("schedulerSummary").textContent = summary;
+      el("healthNotes").textContent = `Latest event: ${formatTime(healthData?.events?.latest_event_time)} | Stale threshold: 120 minutes | Stale/no recent: ${counts.stale + counts.no_recent_event}`;
+    }
+
+    function renderLatest(summary, eventsData, map) {
+      const events = eventsData?.events || [];
+      const latest = events.find((event) => event?.person_detected) || summary?.events?.latest_event || events[0];
+      const panel = el("latestEventPanel");
+      const fields = el("latestEventFields");
+      fields.innerHTML = "";
+
+      if (!latest) {
+        panel.className = "panel latest-event";
+        el("latestEventTitle").textContent = "No Current AI Event";
+        fields.innerHTML = '<div class="empty">No event data available.</div>';
+        return;
+      }
+
+      const isPerson = latest.person_detected || latest.event_type === "person_detected";
+      panel.className = isPerson ? "panel latest-event person" : "panel latest-event";
+      el("latestEventTitle").textContent = isPerson ? "PERSON DETECTED" : "No Current Person Alert";
+      const values = [
+        ["Camera", cameraLabel(latest, map)],
+        ["Time", formatTime(latest.timestamp)],
+        ["Confidence", maxConfidence(latest)],
+        ["Threshold", text(latest.confidence_threshold)],
+        ["Status", text(latest.event_type)],
+        ["Evidence", latest.evidence_url || latest.evidence_path ? "Available" : "None"],
+        ["Recognition", "High-res face evidence required"]
+      ];
+      values.forEach(([label, value]) => {
+        const div = document.createElement("div");
+        div.className = "field";
+        div.innerHTML = `<div class="field-label">${label}</div><div class="field-value"></div>`;
+        div.querySelector(".field-value").textContent = value;
+        fields.appendChild(div);
+      });
+    }
+
+    function renderEvidence(evidenceData) {
+      const images = evidenceData?.evidence || [];
+      const preview = el("evidencePreview");
+      const meta = el("evidenceMeta");
+      preview.innerHTML = "";
+      if (!images.length) {
+        preview.innerHTML = '<div class="empty">No evidence images yet.</div>';
+        meta.textContent = "Evidence is saved only when person_detected=True.";
+        return;
+      }
+      const image = images[0];
+      const url = evidenceUrl(image);
+      const link = document.createElement("a");
+      link.className = "evidence-link";
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener";
+      const img = document.createElement("img");
+      img.className = "evidence-img";
+      img.src = url;
+      img.alt = "Latest evidence image";
+      img.onerror = () => {
+        link.innerHTML = '<div class="empty">Evidence image unavailable.</div>';
+      };
+      link.appendChild(img);
+      preview.appendChild(link);
+      meta.textContent = `${text(image.filename)} | ${formatTime(image.modified_time)} | ${text(image.size_bytes)} bytes | Recognition requires high-resolution face evidence.`;
+    }
+
+    function renderTimeline(eventsData, map) {
+      const list = el("timeline");
+      list.innerHTML = "";
+      const events = eventsData?.events || [];
+      if (!events.length) {
+        list.innerHTML = '<div class="empty">No events found.</div>';
+        return;
+      }
+      events.slice(0, 10).forEach((event) => {
+        const isPerson = event.person_detected || event.event_type === "person_detected";
+        const item = document.createElement("div");
+        item.className = `event-card ${isPerson ? "person" : ""}`;
+        item.innerHTML = `
+          <span class="dot" aria-hidden="true"></span>
+          <div>
+            <div class="event-name">${isPerson ? "Person detected" : "No person"}</div>
+            <div class="event-meta">${cameraLabel(event, map)} | ${formatTime(event.timestamp)} | conf ${maxConfidence(event)}</div>
+          </div>
+          ${badge(isPerson ? "ALERT" : "CLEAR", eventTone(event))}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function renderCameras(camerasData, healthData) {
+      const list = el("cameraStrip");
+      list.innerHTML = "";
+      const cameras = camerasData?.cameras || [];
+      const healthByCamera = {};
+      (healthData?.per_camera || []).forEach((camera) => { healthByCamera[camera.camera_id] = camera; });
+      const stats = await Promise.all(cameras.slice(0, 10).map(async (camera) => {
+        try { return await getJson(`/dashboard/cameras/${encodeURIComponent(camera.camera_id)}/stats`); }
+        catch { return null; }
+      }));
+      cameras.slice(0, 10).forEach((camera, index) => {
+        const health = healthByCamera[camera.camera_id] || {};
+        const status = health.health_status || (camera.enabled ? "active" : "disabled");
+        const tone = status === "active" ? "ok" : (status === "offline" || status === "disabled" ? "danger" : "warn");
+        const item = document.createElement("div");
+        item.className = "camera-card";
+        item.innerHTML = `
+          <div class="camera-title">${text(camera.name || camera.camera_id)}</div>
+          <div class="camera-meta">${badge(status, tone)}</div>
+          <div class="camera-meta">Last: ${formatTime(health.last_event_time || stats[index]?.latest_event_time)}</div>
+          <div class="camera-meta">Person events: ${text(stats[index]?.person_events, "0")}</div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadTvDashboard() {
+      if (loading) return;
+      loading = true;
+      const refreshButton = el("refreshButton");
+      refreshButton.disabled = true;
+      refreshButton.textContent = "Refreshing...";
+      el("errorBox").className = "metric-detail";
+      try {
+        const [summary, cameras, events, evidence, health] = await Promise.all([
+          getJson(endpoints.summary),
+          getJson(endpoints.cameras),
+          getJson(endpoints.latestEvents),
+          getJson(endpoints.evidence),
+          getJson(endpoints.health)
+        ]);
+        const map = cameraMap(cameras);
+        renderMetrics(cameras, health);
+        renderLatest(summary, events, map);
+        renderEvidence(evidence);
+        renderTimeline(events, map);
+        await renderCameras(cameras, health);
+        el("loadStatus").textContent = `Last refreshed ${new Date().toLocaleString()}`;
+        el("errorBox").textContent = "Dashboard data stream healthy.";
+      } catch (error) {
+        el("errorBox").className = "metric-detail warning";
+        el("errorBox").textContent = `Dashboard data unavailable: ${error.message}. Keeping last rendered data where available.`;
+      } finally {
+        nextRefreshAt = Date.now() + refreshIntervalSeconds * 1000;
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh";
+        loading = false;
+        updateCountdown();
+      }
+    }
+
+    el("refreshButton").addEventListener("click", loadTvDashboard);
+    el("fullscreenButton").addEventListener("click", async () => {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key.toLowerCase() === "r") loadTvDashboard();
+      if (event.key.toLowerCase() === "f") el("fullscreenButton").click();
+    });
+    setInterval(() => {
+      updateCountdown();
+      if (Date.now() >= nextRefreshAt) loadTvDashboard();
+    }, 1000);
+    loadTvDashboard();
   </script>
 </body>
 </html>

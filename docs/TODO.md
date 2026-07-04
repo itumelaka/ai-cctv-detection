@@ -11,7 +11,9 @@
 - Exit code 0 = ok/no attention. Exit code 2 = attention/person detected, not a crash.
 - Evidence is saved only when person_detected=True.
 - New evidence image behavior: full-frame boxes plus zoom crop of highest-confidence person.
+- Evidence crop labels avoid implying face identity quality; low-resolution crops can be marked FACE ID NOT SUITABLE.
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
+- Fullscreen TV Command Center mode is available at /dashboard-tv.
 
 ## Current Production Backlog
 
@@ -29,8 +31,10 @@
 - [ ] Add human review actions: true positive / false positive / ignore / download.
 - [ ] Add AI risk score using confidence, zone, after-hours, and camera importance.
 - [ ] Add after-hours detection.
-- [ ] Add fullscreen command center / TV mode.
+- [x] Add fullscreen command center / TV mode.
 - [ ] Continue face detection and safe opt-in face recognition roadmap.
+- [ ] Add high-resolution main-stream/snapshot evidence capture after person_detected=True for future face detection.
+- [ ] Add explicit face evidence quality/readiness metadata before any recognition pilot.
 
 ## Production Verification Commands
 
@@ -128,6 +132,8 @@ Camera list:
 - [x] Ignore future private face data folders in Git
 - [ ] Add face detection only endpoint
 - [ ] Detect face presence without identifying identity
+- [ ] Keep face_recognition_ready false until suitable high-resolution face evidence exists
+- [ ] Capture high-resolution main-stream/snapshot evidence before any reliable face recognition attempt
 - [ ] Add face crop evidence storage
 - [ ] Add privacy and consent notes
 - [ ] Design face enrolment flow
@@ -168,6 +174,8 @@ Camera list:
 - [x] Redesign /dashboard-ui as dark AI Command Center
 - [x] Add live dashboard visual effects
 - [x] Add zoomed person evidence composite
+- [x] Add face-identity caution labels to person crop evidence
+- [x] Add /dashboard-tv fullscreen monitor mode
 - [ ] Search by camera
 - [ ] Search by date
 - [ ] Search by event type
