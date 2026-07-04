@@ -12,25 +12,30 @@ def dashboard_ui():
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ITU AI CCTV Dashboard</title>
+  <title>ITU AI CCTV Command Center</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --text: #17212b;
-      --muted: #687381;
-      --line: #dbe2ea;
-      --accent: #0f766e;
-      --accent-soft: #d9f2ee;
-      --danger: #b42318;
-      --danger-soft: #fde3df;
-      --ok: #157347;
-      --ok-soft: #dcf7e7;
-      --warn: #996a13;
-      --warn-soft: #fff1cf;
-      --muted-soft: #edf1f5;
-      --shadow: 0 8px 24px rgba(23, 33, 43, 0.08);
+      color-scheme: dark;
+      --bg: #080c12;
+      --bg-soft: #0e141d;
+      --panel: #111924;
+      --panel-2: #151f2d;
+      --panel-3: #1b2736;
+      --text: #edf4fb;
+      --muted: #9aa8b8;
+      --line: #263445;
+      --line-bright: #375069;
+      --accent: #20c6b7;
+      --accent-2: #4da3ff;
+      --accent-soft: rgba(32, 198, 183, 0.16);
+      --danger: #ff5f6d;
+      --danger-soft: rgba(255, 95, 109, 0.16);
+      --ok: #39d98a;
+      --ok-soft: rgba(57, 217, 138, 0.16);
+      --warn: #ffc857;
+      --warn-soft: rgba(255, 200, 87, 0.16);
+      --muted-soft: rgba(154, 168, 184, 0.14);
+      --shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
     }
 
     * {
@@ -44,59 +49,115 @@ def dashboard_ui():
     body {
       margin: 0;
       min-height: 100vh;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(32, 198, 183, 0.14), transparent 30%),
+        linear-gradient(180deg, #0a1018 0%, var(--bg) 42%, #070a0f 100%);
       color: var(--text);
       font-family: Arial, Helvetica, sans-serif;
       line-height: 1.45;
     }
 
-    header {
-      background: #11202d;
-      color: #ffffff;
-      padding: 22px 16px;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 70%);
     }
 
-    .wrap {
-      width: min(1180px, 100%);
-      margin: 0 auto;
+    a {
+      color: var(--accent);
+      font-weight: 700;
     }
 
     h1, h2, h3, p {
       margin-top: 0;
     }
 
+    .wrap {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8, 12, 18, 0.88);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 20px 16px 14px;
+    }
+
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
     h1 {
-      margin-bottom: 4px;
-      font-size: clamp(24px, 4vw, 34px);
+      margin: 0;
+      font-size: clamp(26px, 4vw, 42px);
       letter-spacing: 0;
     }
 
-    header p {
-      margin-bottom: 0;
-      color: #c7d2df;
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 760px;
+    }
+
+    .header-meta {
+      display: grid;
+      justify-items: end;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
     }
 
     main {
-      padding: 18px 16px 32px;
+      padding: 24px 16px 36px;
+    }
+
+    #summary-section,
+    #health-section,
+    #latest-events-section,
+    #evidence-section,
+    #cameras-section {
+      scroll-margin-top: 126px;
     }
 
     .status-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       margin-bottom: 16px;
     }
 
+    .status-copy {
+      display: grid;
+      gap: 3px;
+    }
+
     .status-text {
       color: var(--muted);
       font-size: 14px;
-    }
-
-    .status-copy {
-      display: grid;
-      gap: 2px;
     }
 
     .quick-links {
@@ -108,36 +169,45 @@ def dashboard_ui():
 
     button, .quick-link {
       min-height: 38px;
-      border: 1px solid var(--accent);
-      border-radius: 6px;
-      background: var(--accent);
-      color: #ffffff;
+      border: 1px solid var(--line-bright);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #1b2a3a, #14202c);
+      color: var(--text);
       padding: 8px 12px;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.2;
-    }
-
-    .quick-link {
-      display: inline-flex;
-      align-items: center;
-      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
     }
 
     button:hover, .quick-link:hover {
-      background: #0b5f59;
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #203447, #172838);
       color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    button:active, .quick-link:active {
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     button.active, .quick-link.active {
-      background: #ffffff;
-      color: var(--accent);
-      box-shadow: inset 0 0 0 2px var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: #dffefa;
+      box-shadow: inset 0 0 0 1px rgba(32, 198, 183, 0.35);
     }
 
-    button:focus, .quick-link:focus {
-      outline: 3px solid rgba(15, 118, 110, 0.25);
+    button:focus, .quick-link:focus, a:focus {
+      outline: 3px solid rgba(32, 198, 183, 0.28);
       outline-offset: 2px;
+    }
+
+    .primary-button {
+      border-color: rgba(32, 198, 183, 0.7);
+      background: linear-gradient(180deg, #1dd0c1, #118d85);
+      color: #041013;
     }
 
     .grid {
@@ -150,13 +220,13 @@ def dashboard_ui():
       margin-bottom: 14px;
     }
 
-    .two-col {
-      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    .command-grid {
+      grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
       align-items: start;
     }
 
     .panel, .metric {
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(21, 31, 45, 0.96), rgba(13, 20, 29, 0.96));
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: var(--shadow);
@@ -168,18 +238,36 @@ def dashboard_ui():
     }
 
     .metric {
-      padding: 14px;
+      position: relative;
+      min-height: 124px;
+      padding: 16px;
     }
 
-    .metric .label {
+    .metric::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px 999px 0 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .metric .label, .health-stat .label, .field-label {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .metric .value {
-      margin-top: 4px;
-      font-size: 28px;
-      font-weight: 800;
+      margin-top: 10px;
+      font-size: clamp(32px, 5vw, 46px);
+      font-weight: 900;
+      line-height: 1;
+      overflow-wrap: anywhere;
     }
 
     .section-title {
@@ -191,8 +279,16 @@ def dashboard_ui():
     }
 
     .section-title h2 {
-      margin-bottom: 0;
+      margin: 0;
       font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .section-kicker {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: -4px;
+      margin-bottom: 12px;
     }
 
     .list {
@@ -204,7 +300,7 @@ def dashboard_ui():
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
-      background: #ffffff;
+      background: rgba(10, 16, 24, 0.56);
     }
 
     .item-head {
@@ -212,11 +308,11 @@ def dashboard_ui():
       align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 6px;
+      margin-bottom: 7px;
     }
 
     .item-title {
-      font-weight: 800;
+      font-weight: 900;
       overflow-wrap: anywhere;
     }
 
@@ -229,11 +325,13 @@ def dashboard_ui():
     .badge {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       min-height: 24px;
+      border: 1px solid currentColor;
       border-radius: 999px;
       padding: 3px 8px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       white-space: nowrap;
     }
 
@@ -262,45 +360,6 @@ def dashboard_ui():
       background: var(--muted-soft);
     }
 
-    .event-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 86px;
-      gap: 12px;
-      align-items: start;
-    }
-
-    .thumb {
-      width: 86px;
-      height: 64px;
-      object-fit: cover;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #eef2f6;
-    }
-
-    .thumb-link {
-      display: inline-flex;
-      border-radius: 6px;
-    }
-
-    .thumb-link:focus {
-      outline: 3px solid rgba(15, 118, 110, 0.25);
-      outline-offset: 2px;
-    }
-
-    .camera-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .camera-stats {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-
     .health-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -310,20 +369,113 @@ def dashboard_ui():
     .health-stat {
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 10px;
-      background: #fbfcfd;
-    }
-
-    .health-stat .label {
-      color: var(--muted);
-      font-size: 13px;
+      padding: 12px;
+      background: rgba(255,255,255,0.035);
+      min-height: 82px;
     }
 
     .health-stat .value {
-      margin-top: 4px;
-      font-size: 18px;
+      margin-top: 8px;
+      font-size: 21px;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .health-stat.danger {
+      border-color: rgba(255, 95, 109, 0.42);
+      background: var(--danger-soft);
+    }
+
+    .health-stat.warn {
+      border-color: rgba(255, 200, 87, 0.42);
+      background: var(--warn-soft);
+    }
+
+    .latest-event-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--line-bright);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(32, 198, 183, 0.12), rgba(77, 163, 255, 0.08));
+    }
+
+    .latest-event-title {
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 900;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.035);
+      min-width: 0;
+    }
+
+    .field-value {
+      margin-top: 5px;
       font-weight: 800;
       overflow-wrap: anywhere;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(10, 16, 24, 0.56);
+    }
+
+    .timeline-dot {
+      width: 12px;
+      height: 12px;
+      margin-top: 5px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px var(--accent-soft);
+    }
+
+    .timeline-item.person {
+      border-color: rgba(255, 95, 109, 0.46);
+      background: linear-gradient(90deg, rgba(255, 95, 109, 0.13), rgba(10, 16, 24, 0.64));
+    }
+
+    .timeline-item.person .timeline-dot {
+      background: var(--danger);
+      box-shadow: 0 0 0 5px var(--danger-soft);
+    }
+
+    .thumb {
+      width: 120px;
+      height: 82px;
+      object-fit: cover;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0b1119;
+    }
+
+    .thumb-link {
+      display: inline-flex;
+      border-radius: 8px;
     }
 
     .evidence-actions {
@@ -340,27 +492,118 @@ def dashboard_ui():
       overflow-wrap: anywhere;
     }
 
-    a {
-      color: var(--accent);
-      font-weight: 700;
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+
+    .evidence-card {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(10, 16, 24, 0.58);
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .evidence-card .thumb {
+      width: 100%;
+      max-width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .evidence-card .thumb-link,
+    .evidence-card .item-head,
+    .evidence-card .meta {
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .filename-compact {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .camera-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .camera-card {
+      display: grid;
+      gap: 10px;
+      min-height: 210px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      background: rgba(10, 16, 24, 0.58);
+    }
+
+    .camera-card.offline, .camera-card.disabled {
+      border-color: rgba(255, 95, 109, 0.38);
+    }
+
+    .camera-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     .empty {
       padding: 14px;
-      border: 1px dashed var(--line);
+      border: 1px dashed var(--line-bright);
       border-radius: 8px;
       color: var(--muted);
-      background: #fbfcfd;
+      background: rgba(255,255,255,0.035);
     }
 
     .error {
       color: var(--danger);
-      font-weight: 700;
+      font-weight: 800;
+    }
+
+    @media (max-width: 1050px) {
+      .command-grid, .camera-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .evidence-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
     }
 
     @media (max-width: 860px) {
-      .metrics, .two-col, .camera-grid, .health-grid {
+      header {
+        position: static;
+      }
+
+      .hero, .metrics, .health-grid, .field-grid, .evidence-grid {
         grid-template-columns: 1fr;
+      }
+
+      #summary-section,
+      #health-section,
+      #latest-events-section,
+      #evidence-section,
+      #cameras-section {
+        scroll-margin-top: 16px;
+      }
+
+      .header-meta {
+        justify-items: start;
+        text-align: left;
       }
 
       .status-row {
@@ -372,26 +615,39 @@ def dashboard_ui():
       }
 
       .quick-links > * {
-        flex: 1 1 145px;
+        flex: 1 1 140px;
         justify-content: center;
       }
 
-      .event-row {
-        grid-template-columns: 1fr;
+      .timeline-item {
+        grid-template-columns: 18px minmax(0, 1fr);
       }
 
-      .thumb {
+      .timeline-item .thumb-link {
+        grid-column: 1 / -1;
+      }
+
+      .thumb, .evidence-card .thumb {
         width: 100%;
-        height: 150px;
+        height: 180px;
       }
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <h1>ITU AI CCTV Dashboard</h1>
-      <p>Camera and event overview from existing dashboard data.</p>
+    <div class="wrap hero">
+      <div>
+        <div class="title-row">
+          <h1>ITU AI CCTV Command Center</h1>
+          <span class="badge neutral">Production Server</span>
+        </div>
+        <p class="subtitle">Real-time AI surveillance, evidence, health and alert monitoring</p>
+      </div>
+      <div class="header-meta">
+        <div id="loadStatus">Loading dashboard...</div>
+        <div id="refreshStatus">Next refresh in 30s</div>
+      </div>
     </div>
   </header>
 
@@ -399,92 +655,84 @@ def dashboard_ui():
     <div class="wrap">
       <div class="status-row">
         <div class="status-copy">
-          <div id="loadStatus" class="status-text">Loading dashboard...</div>
-          <div id="refreshStatus" class="status-text">Next refresh in 30s</div>
+          <div class="status-text">Operations view from existing dashboard APIs</div>
         </div>
         <nav class="quick-links" aria-label="Dashboard quick links">
-          <button type="button" id="refreshButton">Refresh now</button>
+          <button type="button" id="refreshButton" class="primary-button">Refresh now</button>
           <button type="button" class="quick-link" data-scroll-target="summary-section">Summary</button>
-          <button type="button" class="quick-link" data-scroll-target="cameras-section">Cameras</button>
+          <button type="button" class="quick-link" data-scroll-target="health-section">Health</button>
           <button type="button" class="quick-link" data-scroll-target="latest-events-section">Latest events</button>
           <button type="button" class="quick-link" data-scroll-target="evidence-section">Evidence</button>
-          <button type="button" class="quick-link" data-scroll-target="health-section">Health</button>
+          <button type="button" class="quick-link" data-scroll-target="cameras-section">Cameras</button>
         </nav>
       </div>
 
       <section id="summary-section" class="grid metrics" aria-label="Dashboard totals">
         <div class="metric">
-          <div class="label">Total cameras</div>
+          <div class="label">Total Cameras</div>
           <div id="totalCameras" class="value">-</div>
         </div>
         <div class="metric">
-          <div class="label">Enabled</div>
+          <div class="label">Enabled Cameras</div>
           <div id="enabledCameras" class="value">-</div>
         </div>
         <div class="metric">
-          <div class="label">Disabled</div>
+          <div class="label">Disabled Cameras</div>
           <div id="disabledCameras" class="value">-</div>
         </div>
         <div class="metric">
-          <div class="label">Latest events shown</div>
+          <div class="label">Latest Events Shown</div>
           <div id="latestEventsCount" class="value">-</div>
         </div>
       </section>
 
       <section id="health-section" class="panel" style="margin-bottom: 14px;" aria-label="Dashboard health">
         <div class="section-title">
-          <h2>Health</h2>
+          <h2>AI Status / Health</h2>
           <span id="healthBadge" class="badge neutral">Waiting</span>
         </div>
+        <p class="section-kicker">System status, scheduler signal and camera health from the current backend dashboard data. Stale status is based on each camera stale_threshold_minutes value.</p>
         <div class="health-grid">
           <div class="health-stat">
-            <div class="label">Total cameras</div>
-            <div id="healthTotalCameras" class="value">-</div>
+            <div class="label">System Status</div>
+            <div id="systemStatus" class="value">Loading</div>
           </div>
           <div class="health-stat">
-            <div class="label">Enabled</div>
-            <div id="healthEnabledCameras" class="value">-</div>
-          </div>
-          <div class="health-stat">
-            <div class="label">Disabled</div>
-            <div id="healthDisabledCameras" class="value">-</div>
-          </div>
-          <div class="health-stat">
-            <div class="label">Latest event</div>
-            <div id="healthLatestEventTime" class="value">-</div>
-          </div>
-          <div class="health-stat">
-            <div class="label">Scheduler latest run</div>
+            <div class="label">Scheduler Latest Run</div>
             <div id="schedulerLatestRunTime" class="value">-</div>
           </div>
           <div class="health-stat">
-            <div class="label">Scheduler summary</div>
+            <div class="label">Scheduler Summary</div>
             <div id="schedulerLatestSummary" class="value">-</div>
+          </div>
+          <div class="health-stat">
+            <div class="label">Latest Event</div>
+            <div id="healthLatestEventTime" class="value">-</div>
+          </div>
+          <div class="health-stat">
+            <div class="label">Health Cameras</div>
+            <div id="healthCameraTotals" class="value">-</div>
           </div>
           <div class="health-stat">
             <div class="label">Active</div>
             <div id="healthActiveCount" class="value">-</div>
           </div>
-          <div class="health-stat">
-            <div class="label">Stale</div>
-            <div id="healthStaleCount" class="value">-</div>
+          <div class="health-stat warn">
+            <div class="label">Stale / No Recent</div>
+            <div id="healthStaleReviewCount" class="value">-</div>
           </div>
-          <div class="health-stat">
-            <div class="label">No recent event</div>
-            <div id="healthNoRecentCount" class="value">-</div>
-          </div>
-          <div class="health-stat">
-            <div class="label">Offline / disabled</div>
+          <div class="health-stat danger">
+            <div class="label">Offline / Disabled</div>
             <div id="healthOfflineDisabledCount" class="value">-</div>
           </div>
         </div>
       </section>
 
-      <section class="grid two-col">
+      <section class="grid command-grid">
         <div class="grid">
           <div class="panel">
             <div class="section-title">
-              <h2>Latest Event</h2>
+              <h2>Latest AI Event</h2>
               <span id="latestEventBadge" class="badge neutral">Waiting</span>
             </div>
             <div id="latestEventSummary" class="empty">No latest event loaded.</div>
@@ -492,9 +740,9 @@ def dashboard_ui():
 
           <div id="latest-events-section" class="panel">
             <div class="section-title">
-              <h2>Latest 10 Events</h2>
+              <h2>Event Timeline</h2>
             </div>
-            <div id="latestEvents" class="list"></div>
+            <div id="latestEvents" class="timeline"></div>
           </div>
         </div>
 
@@ -508,7 +756,7 @@ def dashboard_ui():
 
           <div id="evidence-section" class="panel">
             <div class="section-title">
-              <h2>Recent Evidence</h2>
+              <h2>Evidence Gallery</h2>
             </div>
             <div class="evidence-actions">
               <button type="button" id="refreshEvidenceButton">Refresh Evidence</button>
@@ -520,14 +768,14 @@ def dashboard_ui():
             <div class="evidence-note">
               Evidence images are stored on the Windows Server. Paste this path into File Explorer if browser blocks direct folder links.
             </div>
-            <div id="evidenceList" class="list"></div>
+            <div id="evidenceList" class="evidence-grid"></div>
           </div>
         </aside>
       </section>
 
       <section id="cameras-section" class="panel" style="margin-top: 14px;">
         <div class="section-title">
-          <h2>Cameras</h2>
+          <h2>Camera Grid</h2>
         </div>
         <div id="cameraList" class="camera-grid"></div>
       </section>
@@ -559,6 +807,7 @@ def dashboard_ui():
       if (value === null || value === undefined || value === "") {
         return fallback;
       }
+
       return String(value);
     }
 
@@ -574,6 +823,20 @@ def dashboard_ui():
       }
 
       return date.toLocaleString();
+    }
+
+    function formatConfidence(value) {
+      if (value === null || value === undefined || value === "") {
+        return "-";
+      }
+
+      const numberValue = Number(value);
+
+      if (Number.isNaN(numberValue)) {
+        return text(value);
+      }
+
+      return numberValue.toFixed(2);
     }
 
     function makeBadge(label, tone) {
@@ -621,7 +884,7 @@ def dashboard_ui():
       const type = text(event?.event_type, event?.person_detected ? "person" : "no_person");
 
       if (event?.person_detected || type === "person_detected" || type === "person") {
-        return "person";
+        return "person detected";
       }
 
       if (type === "no_person") {
@@ -631,8 +894,73 @@ def dashboard_ui():
       return type;
     }
 
+    function confidenceNumber(value) {
+      if (value === null || value === undefined || value === "") {
+        return null;
+      }
+
+      const numberValue = Number(value);
+      return Number.isNaN(numberValue) ? null : numberValue;
+    }
+
+    function maxConfidence(event) {
+      const detections = event?.detections || [];
+      const confidences = detections
+        .map((detection) => detection?.confidence)
+        .map(confidenceNumber)
+        .filter((confidence) => confidence !== null);
+
+      if (!confidences.length) {
+        return confidenceNumber(event?.highest_confidence)
+          ?? confidenceNumber(event?.max_confidence)
+          ?? confidenceNumber(event?.confidence);
+      }
+
+      return Math.max(...confidences);
+    }
+
     function cameraIdFromEvent(event) {
-      return event?.camera?.id || event?.camera_id || "unknown_camera";
+      const nestedId = event?.camera?.id || event?.camera?.camera_id || "";
+
+      if (nestedId && nestedId !== "unknown_camera") {
+        return nestedId;
+      }
+
+      return event?.camera_id || event?.camera_id_from_log || "";
+    }
+
+    function makeCameraNameMap(camerasData) {
+      const map = {};
+      (camerasData?.cameras || []).forEach((camera) => {
+        const id = camera.camera_id || camera.id;
+        const label = camera.camera_name || camera.name || id;
+
+        if (id && label) {
+          map[id] = label;
+        }
+      });
+
+      return map;
+    }
+
+    function cameraNameFromEvent(event, cameraNameMap = {}) {
+      const id = cameraIdFromEvent(event);
+      const label = event?.camera_name
+        || event?.name
+        || event?.camera?.camera_name
+        || event?.camera?.name
+        || cameraNameMap[id]
+        || id;
+
+      return label && label !== "unknown_camera" ? label : "Unknown camera";
+    }
+
+    function preferredLatestEvent(summary, eventsData) {
+      const events = eventsData?.events || [];
+      return events.find((event) => event?.person_detected)
+        || summary?.events?.latest_event
+        || events[0]
+        || null;
     }
 
     function evidenceUrlFromImage(image) {
@@ -675,8 +1003,24 @@ def dashboard_ui():
       return response.json();
     }
 
-    function renderLatestSummary(summary) {
-      const latest = summary?.events?.latest_event;
+    function addField(container, label, value) {
+      const field = document.createElement("div");
+      field.className = "field";
+
+      const fieldLabel = document.createElement("div");
+      fieldLabel.className = "field-label";
+      fieldLabel.textContent = label;
+
+      const fieldValue = document.createElement("div");
+      fieldValue.className = "field-value";
+      fieldValue.textContent = text(value);
+
+      field.append(fieldLabel, fieldValue);
+      container.appendChild(field);
+    }
+
+    function renderLatestSummary(summary, eventsData, cameraNameMap) {
+      const latest = preferredLatestEvent(summary, eventsData);
       const box = el("latestEventSummary");
       const badge = el("latestEventBadge");
       clearNode(box);
@@ -690,18 +1034,27 @@ def dashboard_ui():
       }
 
       badge.className = `badge ${eventTone(latest)}`;
-      badge.textContent = latest.event_type || "event";
+      badge.textContent = eventLabel(latest);
 
       const title = document.createElement("div");
-      title.className = "item-title";
-      title.textContent = latest.person_detected ? "Person detected" : "No person detected";
+      title.className = "latest-event-title";
+      title.textContent = latest.person_detected ? "Person Detected" : "No Person Detected";
 
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = `Time: ${formatTime(latest.timestamp)} | Severity: ${text(latest.severity)}`;
+      const fields = document.createElement("div");
+      fields.className = "field-grid";
+      addField(fields, "Camera", cameraNameFromEvent(latest, cameraNameMap));
+      addField(fields, "Time", formatTime(latest.timestamp));
+      addField(fields, "Status", text(latest.event_type));
+      addField(fields, "Severity", text(latest.severity));
+      addField(fields, "Confidence", formatConfidence(maxConfidence(latest)));
+      addField(fields, "Evidence", latest.evidence_path ? "Saved" : "None");
 
-      box.className = "item";
-      box.append(title, meta);
+      const message = document.createElement("div");
+      message.className = "meta";
+      message.textContent = text(latest.message, "");
+
+      box.className = "latest-event-card";
+      box.append(title, fields, message);
     }
 
     function renderDisabled(summary) {
@@ -725,7 +1078,7 @@ def dashboard_ui():
         title.className = "item-title";
         title.textContent = text(camera.camera_name || camera.camera_id);
 
-        head.append(title, makeBadge("disabled", "warn"));
+        head.append(title, makeBadge("disabled", "danger"));
 
         const meta = document.createElement("div");
         meta.className = "meta";
@@ -733,14 +1086,14 @@ def dashboard_ui():
 
         const notes = document.createElement("div");
         notes.className = "meta";
-        notes.textContent = text(camera.notes, "");
+        notes.textContent = text(camera.notes || camera.health_note, "");
 
         item.append(head, meta, notes);
         list.appendChild(item);
       });
     }
 
-    function renderEvents(eventsData) {
+    function renderEvents(eventsData, cameraNameMap) {
       const list = el("latestEvents");
       clearNode(list);
       const events = eventsData?.events || [];
@@ -751,9 +1104,17 @@ def dashboard_ui():
         return;
       }
 
-      events.forEach((event) => {
+      const orderedEvents = [...events].sort((left, right) => {
+        return Number(Boolean(right?.person_detected)) - Number(Boolean(left?.person_detected));
+      });
+
+      orderedEvents.forEach((event) => {
         const item = document.createElement("div");
-        item.className = "item event-row";
+        item.className = `timeline-item ${event?.person_detected ? "person" : ""}`;
+
+        const dot = document.createElement("span");
+        dot.className = "timeline-dot";
+        dot.setAttribute("aria-hidden", "true");
 
         const details = document.createElement("div");
         const head = document.createElement("div");
@@ -768,14 +1129,14 @@ def dashboard_ui():
 
         const meta = document.createElement("div");
         meta.className = "meta";
-        meta.textContent = `Camera: ${cameraIdFromEvent(event)} | Time: ${formatTime(event.timestamp)}`;
+        meta.textContent = `Camera: ${cameraNameFromEvent(event, cameraNameMap)} | Time: ${formatTime(event.timestamp)} | Confidence: ${formatConfidence(maxConfidence(event))}`;
 
         const message = document.createElement("div");
         message.className = "meta";
         message.textContent = text(event.message, "");
 
         details.append(head, meta, message);
-        item.appendChild(details);
+        item.append(dot, details);
 
         if (event.evidence_url) {
           const link = document.createElement("a");
@@ -817,29 +1178,32 @@ def dashboard_ui():
         }
       });
 
-      el("healthTotalCameras").textContent = text(cameras.total);
-      el("healthEnabledCameras").textContent = text(cameras.enabled);
-      el("healthDisabledCameras").textContent = text(cameras.disabled);
+      const reviewCount = counts.stale + counts.no_recent_event;
+      const unavailableCount = counts.offline + counts.disabled;
+      el("healthCameraTotals").textContent = `${text(cameras.total)} total / ${text(cameras.enabled)} enabled / ${text(cameras.disabled)} disabled`;
       el("healthLatestEventTime").textContent = formatTime(events.latest_event_time);
       el("schedulerLatestRunTime").textContent = text(scheduler.latest_run_time);
       el("schedulerLatestSummary").textContent = text(scheduler.latest_summary);
       el("healthActiveCount").textContent = counts.active;
-      el("healthStaleCount").textContent = counts.stale;
-      el("healthNoRecentCount").textContent = counts.no_recent_event;
-      el("healthOfflineDisabledCount").textContent = counts.offline + counts.disabled;
+      el("healthStaleReviewCount").textContent = reviewCount;
+      el("healthOfflineDisabledCount").textContent = unavailableCount;
 
       if (counts.offline > 0) {
         badge.className = "badge danger";
         badge.textContent = `${counts.offline} offline`;
-      } else if (counts.stale > 0 || counts.no_recent_event > 0) {
+        el("systemStatus").textContent = "Needs review";
+      } else if (reviewCount > 0) {
         badge.className = "badge warn";
-        badge.textContent = `${counts.stale + counts.no_recent_event} need review`;
+        badge.textContent = `${reviewCount} need review`;
+        el("systemStatus").textContent = "Review";
       } else if (counts.disabled > 0) {
         badge.className = "badge muted";
         badge.textContent = `${counts.disabled} disabled`;
+        el("systemStatus").textContent = "Operational";
       } else {
         badge.className = "badge ok";
-        badge.textContent = "ok";
+        badge.textContent = "Operational";
+        el("systemStatus").textContent = "Operational";
       }
     }
 
@@ -853,21 +1217,9 @@ def dashboard_ui():
         return;
       }
 
-      evidence.slice(0, 4).forEach((image) => {
+      evidence.forEach((image) => {
         const item = document.createElement("div");
-        item.className = "item event-row";
-
-        const details = document.createElement("div");
-        const title = document.createElement("div");
-        title.className = "item-title";
-        title.textContent = text(image.filename);
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = `Modified: ${formatTime(image.modified_time)} | Size: ${text(image.size_bytes)} bytes`;
-
-        details.append(title, meta);
-        item.appendChild(details);
+        item.className = "evidence-card";
 
         const imageUrl = evidenceUrlFromImage(image);
         if (imageUrl) {
@@ -885,6 +1237,24 @@ def dashboard_ui():
           item.appendChild(link);
         }
 
+        const head = document.createElement("div");
+        head.className = "item-head";
+
+        const title = document.createElement("div");
+        title.className = "item-title filename-compact";
+        title.textContent = text(image.filename);
+        title.title = text(image.filename);
+        head.append(title, makeBadge("evidence", "neutral"));
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `Timestamp: ${formatTime(image.modified_time)} | Size: ${text(image.size_bytes)} bytes`;
+
+        const status = document.createElement("div");
+        status.className = "meta";
+        status.textContent = "Detection status: person evidence image";
+
+        item.append(head, meta, status);
         list.appendChild(item);
       });
     }
@@ -960,8 +1330,9 @@ def dashboard_ui():
       cameras.forEach((camera, index) => {
         const stats = statsResults[index];
         const health = healthByCamera[camera.camera_id] || {};
+        const status = text(health.health_status, camera.enabled ? "active" : "disabled");
         const item = document.createElement("div");
-        item.className = "item";
+        item.className = `camera-card ${status}`;
 
         const head = document.createElement("div");
         head.className = "item-head";
@@ -970,35 +1341,32 @@ def dashboard_ui():
         title.className = "item-title";
         title.textContent = text(camera.name || camera.camera_id);
 
-        head.append(title, makeBadge(text(health.health_status, camera.enabled ? "active" : "disabled"), healthTone(health.health_status)));
+        head.append(title, makeBadge(status, healthTone(status)));
 
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = `ID: ${text(camera.camera_id)} | IP: ${text(camera.ip)} | Channel: ${text(camera.channel)}`;
+        const idMeta = document.createElement("div");
+        idMeta.className = "meta";
+        idMeta.textContent = `ID: ${text(camera.camera_id)} | IP: ${text(camera.ip)} | Channel: ${text(camera.channel)}`;
 
-        const notes = document.createElement("div");
-        notes.className = "meta";
-        notes.textContent = text(camera.notes, "");
-
-        const freshness = document.createElement("div");
-        freshness.className = "meta";
-        freshness.textContent = `Last event: ${formatTime(health.last_event_time)} | Stale: ${text(health.stale_minutes, "n/a")} min / ${text(health.stale_threshold_minutes, "n/a")} min`;
-
-        const source = document.createElement("div");
-        source.className = "meta";
-        source.textContent = `Last seen source: ${text(health.last_seen_source, "none")}`;
-
-        const healthNote = document.createElement("div");
-        healthNote.className = "meta";
-        healthNote.textContent = text(health.health_note || camera.health_note, "");
+        const enabled = document.createElement("div");
+        enabled.className = "meta";
+        enabled.textContent = `Mode: ${camera.enabled ? "enabled" : "disabled"} | Last event: ${formatTime(health.last_event_time || stats?.latest_event_time)}`;
 
         const statsRow = document.createElement("div");
         statsRow.className = "camera-stats";
         statsRow.append(
-          makeBadge(text(health.health_status, "unknown"), healthTone(health.health_status)),
+          makeBadge(camera.enabled ? "enabled" : "disabled", camera.enabled ? "ok" : "muted"),
+          makeBadge(`health ${status}`, healthTone(status)),
           makeBadge(`events ${text(stats?.total_events, "0")}`, "neutral"),
-          makeBadge(`person ${text(stats?.person_events, "0")}`, "danger")
+          makeBadge(`person ${text(stats?.person_events, "0")}`, stats?.person_events ? "danger" : "muted")
         );
+
+        const freshness = document.createElement("div");
+        freshness.className = "meta";
+        freshness.textContent = `Stale age: ${text(health.stale_minutes, "n/a")} min (threshold ${text(health.stale_threshold_minutes, "n/a")} min) | Source: ${text(health.last_seen_source, "none")}`;
+
+        const notes = document.createElement("div");
+        notes.className = "meta";
+        notes.textContent = text(health.health_note || camera.health_note || camera.notes, "");
 
         if (stats?.latest_evidence_url) {
           const evidenceLink = document.createElement("a");
@@ -1009,7 +1377,7 @@ def dashboard_ui():
           statsRow.appendChild(evidenceLink);
         }
 
-        item.append(head, meta, notes, freshness, source, healthNote, statsRow);
+        item.append(head, idMeta, enabled, statsRow, freshness, notes);
         list.appendChild(item);
       });
     }
@@ -1021,7 +1389,7 @@ def dashboard_ui():
 
       isLoading = true;
       const status = el("loadStatus");
-      status.className = "status-text";
+      status.className = "";
       status.textContent = "Loading dashboard...";
 
       try {
@@ -1033,16 +1401,17 @@ def dashboard_ui():
           getJson(endpoints.health)
         ]);
 
-        renderLatestSummary(summary);
+        const cameraNameMap = makeCameraNameMap(cameras);
+        renderLatestSummary(summary, events, cameraNameMap);
         renderDisabled(summary);
-        renderEvents(events);
+        renderEvents(events, cameraNameMap);
         renderEvidence(evidence);
         renderHealth(health);
         await renderCameras(cameras, health);
 
-        status.textContent = `Last updated ${new Date().toLocaleString()}`;
+        status.textContent = `Last refresh ${new Date().toLocaleString()}`;
       } catch (error) {
-        status.className = "status-text error";
+        status.className = "error";
         status.textContent = `Dashboard load failed: ${error.message}`;
       } finally {
         resetRefreshCountdown();
