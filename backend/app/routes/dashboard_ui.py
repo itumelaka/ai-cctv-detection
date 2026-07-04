@@ -1623,12 +1623,14 @@ def dashboard_tv():
     html {
       max-width: 100%;
       overflow-x: hidden;
+      overflow-y: auto;
     }
 
     body {
       margin: 0;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       max-width: 100%;
       background:
         radial-gradient(circle at 16% 0%, rgba(35, 216, 196, 0.16), transparent 30%),
@@ -1658,9 +1660,9 @@ def dashboard_tv():
       gap: 14px;
       width: 100vw;
       max-width: 100%;
-      height: 100vh;
+      min-height: 100vh;
       padding: 16px;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .topbar, .panel, .metric, .camera-card, .event-card {
@@ -1695,9 +1697,8 @@ def dashboard_tv():
       font-size: clamp(28px, 3.5vw, 56px);
       line-height: 1;
       letter-spacing: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .topbar-right {
@@ -1802,7 +1803,7 @@ def dashboard_tv():
       gap: 14px;
       min-height: 0;
       min-width: 0;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .left-stack, .center-stack, .right-stack {
@@ -1880,7 +1881,7 @@ def dashboard_tv():
 
     .event-fields {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       align-content: end;
       min-width: 0;
@@ -1948,8 +1949,14 @@ def dashboard_tv():
       display: grid;
       gap: 8px;
       min-height: 0;
-      overflow: hidden;
       min-width: 0;
+    }
+
+    .tv-timeline-list {
+      max-height: clamp(220px, 28vh, 420px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-right: 6px;
     }
 
     .event-card {
@@ -2001,7 +2008,7 @@ def dashboard_tv():
       gap: 14px;
       min-height: 0;
       min-width: 0;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .camera-strip {
@@ -2097,7 +2104,7 @@ def dashboard_tv():
         grid-template-columns: repeat(2, minmax(180px, 1fr));
       }
       .event-fields {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
     }
 
@@ -2203,7 +2210,7 @@ def dashboard_tv():
     <footer class="bottom-grid">
       <section class="panel">
         <div class="panel-label">Event Timeline</div>
-        <div id="timeline" class="timeline"></div>
+        <div id="timeline" class="timeline tv-timeline-list"></div>
       </section>
       <section class="panel">
         <div class="panel-label">Dashboard Status</div>
