@@ -10,6 +10,7 @@ Repository:
 - Production server path: C:\ituaicctv
 - Local laptop dev path: C:\Users\burnk\OneDrive\Documents-assets\ai-cctv-detection
 - Production dashboard: http://192.168.1.254:8000/dashboard-ui
+- TV command center: http://192.168.1.254:8000/dashboard-tv
 - GitHub Pages is no longer the primary dashboard. Production dashboard is served by backend /dashboard-ui.
 
 Latest important deployed commits:
@@ -167,6 +168,10 @@ Confirmed at this checkpoint:
 - Scheduler BAT uses .venv312 first, then .venv, then python from PATH.
 - Dashboard UI includes auto-refresh every 30 seconds, last updated time, next refresh countdown, quick links/buttons, improved badges, clickable evidence thumbnails, Health card, and per-camera health badges.
 - Dashboard UI includes stale/offline health counts and camera freshness details.
+- /dashboard-tv includes a selectable backend-proxied MJPEG live camera view, camera dropdown, clickable camera cards, Restart stream button, and a separate latest evidence snapshot panel.
+- Direct MJPEG stream endpoint is available at /dashboard/live/{camera_id}/stream.mjpg and is limited to 4 FPS for one selected camera/viewer.
+- Snapshot fallback endpoint remains available at /dashboard/live/{camera_id}/snapshot.jpg.
+- Browser clients connect to the backend only; RTSP URLs, usernames, and passwords are not exposed to the frontend.
 - backend/app/dashboard_health.py exists.
 - tests/test_dashboard_health.py exists.
 - Unit test passed with: python -m unittest discover -s tests -p "test_*.py" -v

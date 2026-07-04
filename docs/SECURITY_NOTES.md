@@ -14,6 +14,8 @@
 - Temporary Change access is allowed only during controlled copy operations and must be reverted to Read.
 - NTFS Everyone Modify was removed after copy cleanup.
 - Browser may show a directory index if opening the UNC/share path; use File Explorer for folder browsing.
+- `/dashboard-tv` includes a selectable backend-proxied MJPEG live camera view.
+- Browser access is internal HTTP, so browsers may show "Not secure" unless HTTPS, a reverse proxy, and a certificate are configured.
 
 Verify production access:
 
@@ -62,6 +64,10 @@ Rules:
 - Keep dashboard endpoints lightweight and read-only unless a future change explicitly adds protected controls.
 - Evidence links should use the local evidence-serving endpoint, such as /events/evidence/{filename}, not direct camera URLs.
 - Scheduler log health summaries must stay credential-safe. If log lines ever contain credential-like fields or RTSP URLs, dashboard health output should mask them before display.
+- The TV MJPEG endpoint `/dashboard/live/{camera_id}/stream.mjpg` must remain a backend proxy. The browser must never receive RTSP URLs, CCTV usernames, or CCTV passwords.
+- The MJPEG stream is intended for one selected camera/viewer on the TV dashboard. Avoid opening many browser tabs or streaming many cameras at once.
+- The snapshot fallback `/dashboard/live/{camera_id}/snapshot.jpg` returns one JPEG frame and should also remain credential-safe.
+- Future public or wider LAN exposure should use HTTPS through a reverse proxy or certificate-backed deployment.
 
 ## CCTV User Account
 

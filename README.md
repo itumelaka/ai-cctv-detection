@@ -149,7 +149,17 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 - Fullscreen button and F keyboard shortcut
 - R keyboard shortcut for refresh
 
-The browser does not connect to RTSP directly and never receives CCTV credentials. `/dashboard-tv` uses the backend MJPEG proxy for the selected live camera, while `/dashboard/live/{camera_id}/snapshot.jpg` remains available as a lightweight fallback/manual snapshot path. MJPEG is intended for one selected TV view, not all cameras at once; future scaling work should consider WebRTC or HLS.
+The browser does not connect to RTSP directly and never receives CCTV credentials. `/dashboard-tv` uses the backend MJPEG proxy for the selected live camera, while `/dashboard/live/{camera_id}/snapshot.jpg` remains available as a lightweight fallback/manual snapshot path. MJPEG is limited to 4 FPS and is intended for one selected TV view, not all cameras at once; future scaling work should consider WebRTC or HLS.
+
+Production TV and live-view test URLs:
+
+- TV dashboard: http://192.168.1.254:8000/dashboard-tv
+- Direct MJPEG stream: http://192.168.1.254:8000/dashboard/live/block_e_cam_2/stream.mjpg
+- Snapshot fallback: http://192.168.1.254:8000/dashboard/live/block_e_cam_2/snapshot.jpg
+
+The MJPEG stream endpoint returns `multipart/x-mixed-replace` and does not run YOLO, save evidence, write event logs, or send Telegram alerts. Latest Evidence Snapshot on `/dashboard-tv` is historical proof and is separate from the live feed.
+
+Internal LAN access is currently HTTP, so browsers may show "Not secure". This is expected unless an HTTPS reverse proxy and certificate are configured.
 
 Dashboard navigation:
 
@@ -334,6 +344,8 @@ GET /dashboard/cameras/{camera_id}/latest-event
 GET /dashboard/cameras/{camera_id}/stats
 GET /dashboard/events/latest
 GET /dashboard/events/latest?limit=10
+GET /dashboard/live/{camera_id}/stream.mjpg
+GET /dashboard/live/{camera_id}/snapshot.jpg
 
 Dashboard endpoints are lightweight read-only endpoints. They read existing camera configuration, event logs, and evidence image metadata only. They do not run YOLO detection. Per-camera dashboard endpoints validate camera_id against the configured camera list.
 

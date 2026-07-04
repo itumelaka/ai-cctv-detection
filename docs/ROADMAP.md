@@ -21,6 +21,7 @@ Operational foundation:
 - The person crop is review evidence only. Low-resolution sub-stream crops are not suitable proof for face identity recognition.
 - Fullscreen TV Command Center mode is available at `/dashboard-tv`.
 - TV mode now separates a selectable backend-proxied MJPEG live camera view from historical evidence snapshots.
+- Direct selected-camera stream endpoint is available at `/dashboard/live/{camera_id}/stream.mjpg` with a 4 FPS limit; `/dashboard/live/{camera_id}/snapshot.jpg` remains as fallback.
 
 ## Forward Backlog
 
@@ -35,7 +36,8 @@ Operational foundation:
 9. AI risk score: confidence, zone, after-hours, camera importance.
 10. After-hours detection.
 11. Improve fullscreen command center / TV mode after real TV review.
-12. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
+12. WebRTC/HLS/media-server upgrade for better live-view scaling if multiple viewers or cameras need streaming.
+13. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
 
 ## Current Checkpoint
 
@@ -221,6 +223,7 @@ Planned features:
 - Fullscreen TV Command Center mode at /dashboard-tv - completed
 - Selectable live camera snapshot panel in TV mode - completed
 - Selectable backend-proxied MJPEG live camera stream in TV mode - completed
+- MJPEG endpoint is one selected-camera/viewer feature at 4 FPS; browser never receives RTSP credentials
 - Search and filter
 - Human review actions
 - TV mode visual tuning after wall-monitor review
@@ -236,6 +239,8 @@ Important dashboard URLs:
 - /dashboard/cameras
 - /dashboard/events/latest
 - /dashboard/evidence
+- /dashboard/live/{camera_id}/stream.mjpg
+- /dashboard/live/{camera_id}/snapshot.jpg
 - /dashboard/cameras/{camera_id}/latest-event
 - /dashboard/cameras/{camera_id}/stats
 

@@ -15,6 +15,7 @@
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
 - Fullscreen TV Command Center mode is available at /dashboard-tv.
 - TV mode includes a selectable backend-proxied MJPEG live camera panel; latest evidence is shown separately as historical proof.
+- Direct stream endpoint /dashboard/live/{camera_id}/stream.mjpg is available for one selected camera/viewer at 4 FPS; /dashboard/live/{camera_id}/snapshot.jpg remains as fallback.
 
 ## Current Production Backlog
 
@@ -179,6 +180,7 @@ Camera list:
 - [x] Add /dashboard-tv fullscreen monitor mode
 - [x] Add selectable live camera snapshot panel to /dashboard-tv
 - [x] Add selectable MJPEG live camera stream to /dashboard-tv
+- [x] Document MJPEG live stream endpoint, snapshot fallback, security, and performance limits
 - [ ] Consider WebRTC or HLS upgrade for better TV stream scaling and lower CPU/network usage
 - [ ] Search by camera
 - [ ] Search by date

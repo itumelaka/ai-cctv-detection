@@ -7,6 +7,7 @@ FastAPI backend for CCTV RTSP testing, snapshot capture, YOLO detection, person-
 - Production path: `C:\ituaicctv`
 - Development path: `C:\Users\burnk\OneDrive\Documents-assets\ai-cctv-detection`
 - Production dashboard: `http://192.168.1.254:8000/dashboard-ui`
+- TV command center: `http://192.168.1.254:8000/dashboard-tv`
 - Backend service: `ITUAICCTVBackend`, confirmed `Running`, `Automatic`
 - Scheduler task: `ITU AI CCTV Person Monitor`, confirmed `Ready`
 - Scheduler Python: `C:\ituaicctv\.venv312\Scripts\python.exe`
@@ -102,12 +103,15 @@ GET /dashboard/events/latest
 GET /dashboard/events/latest?limit=10
 GET /dashboard/evidence
 GET /dashboard/evidence?limit=20
+GET /dashboard/live/{camera_id}/stream.mjpg
+GET /dashboard/live/{camera_id}/snapshot.jpg
 ```
 
 ### Dashboard UI
 
 ```
 GET /dashboard-ui
+GET /dashboard-tv
 ```
 
 Full HTML dashboard served directly by the backend. Auto-refreshes every 30 seconds. Loads data from all dashboard endpoints.
@@ -117,6 +121,28 @@ Production dashboard:
 ```
 http://192.168.1.254:8000/dashboard-ui
 ```
+
+TV command center:
+
+```
+http://192.168.1.254:8000/dashboard-tv
+```
+
+The TV dashboard includes a selectable MJPEG Live Camera View. The browser connects only to the backend; the backend proxies the selected camera RTSP stream and does not expose RTSP URLs, CCTV usernames, or CCTV passwords. The MJPEG stream is limited to 4 FPS and is intended for one selected camera/viewer, not all cameras simultaneously.
+
+Live stream test URL:
+
+```
+http://192.168.1.254:8000/dashboard/live/block_e_cam_2/stream.mjpg
+```
+
+Snapshot fallback test URL:
+
+```
+http://192.168.1.254:8000/dashboard/live/block_e_cam_2/snapshot.jpg
+```
+
+The live stream and snapshot fallback do not run YOLO, write event logs, save evidence images, or send Telegram alerts. Latest evidence in `/dashboard-tv` remains a separate historical evidence panel.
 
 Use `http://127.0.0.1:8000/dashboard-ui` only when browsing on the machine running the backend. The production backend runs from `C:\ituaicctv` on the Windows Server. GitHub Pages may remain useful for static/demo/client work, but daily operation uses the backend dashboard served by FastAPI.
 
