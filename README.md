@@ -32,16 +32,15 @@ Production server status:
 - Task Scheduler task: ITU AI CCTV Person Monitor
 - Task state: Ready
 - Scheduler Python: C:\ituaicctv\.venv312\Scripts\python.exe
-- Camera registry now has 11 enabled cameras. Latest confirmed scheduler logs before adding new cameras show status ok, enabled=9, failed=0.
+- Camera registry now has 12 enabled cameras. Latest confirmed scheduler logs before adding the newly labelled cameras show status ok, enabled=9, failed=0.
 
 Camera and network status:
 
 - Total known cameras: 13
-- Enabled cameras: 11
-- Disabled/offline cameras: 2
+- Enabled cameras: 12
+- Disabled/offline cameras: 1
 - Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20, because ping and RTSP port 554 are not reachable.
-- Disabled/offline: new_cam_13 / ITU NEW CAM13 / 192.168.40.26, because ping and RTSP port 554 are not reachable from production server.
-- Previously confirmed enabled cameras were active based on recent health checks; new_cam_11 and new_cam_12 should be verified after the next scheduler or dashboard health run.
+- Previously confirmed enabled cameras were active based on recent health checks; kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 should be verified after the next scheduler or dashboard health run.
 - Production server LAN IP: 192.168.1.254
 - GOVNET NIC: 10.65.28.254
 - CCTV subnet: 192.168.40.0/24
@@ -179,8 +178,8 @@ Confirmed at this checkpoint:
 - Backend FastAPI works.
 - Hikvision RTSP works.
 - Multi-camera config has 13 known cameras.
-- 11 cameras are enabled.
-- 2 cameras are disabled/offline: block_f_cam_8 / 192.168.40.20 and new_cam_13 / 192.168.40.26.
+- 12 cameras are enabled.
+- 1 camera is disabled/offline: block_f_cam_8 / 192.168.40.20.
 - Disabled camera reason: ping and RTSP port 554 are not reachable.
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
@@ -287,18 +286,17 @@ Completed:
 Current configured camera status:
 
 - Total known cameras: 13
-- Enabled cameras: 11
-- Disabled/offline cameras: 2
+- Enabled cameras: 12
+- Disabled/offline cameras: 1
 - Disabled/offline camera: block_f_cam_8 / 192.168.40.20
-- Disabled/offline camera: new_cam_13 / 192.168.40.26
 - Status: offline
 - Reason: ping and RTSP port 554 are not reachable
 
-New provisional Hikvision cameras:
+New confirmed Hikvision cameras:
 
-- new_cam_11 / ITU NEW CAM11 / 192.168.40.24 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
-- new_cam_12 / ITU NEW CAM12 / 192.168.40.25 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
-- new_cam_13 / ITU NEW CAM13 / 192.168.40.26 / channel 102 / disabled/offline, ping and RTSP TCP 554 are not reachable from production server.
+- kuarantin_cam_11 / ITU KUARANTIN CAM11 / 192.168.40.23 / channel 102 / enabled, confirmed VLC RTSP stream label KUARANTIN.
+- biosekuriti_cam_12 / ITU BIOSEKURITI CAM12 / 192.168.40.24 / channel 102 / enabled, confirmed VLC RTSP stream label BIOSEKURITI.
+- makmal_cam_13 / ITU MAKMAL CAM13 / 192.168.40.25 / channel 102 / enabled, confirmed VLC RTSP stream label MAKMAL.
 
 ## Current Working Camera
 
@@ -460,21 +458,18 @@ Per-camera dashboard health includes:
 Current expected healthy dashboard state after a successful scheduler run:
 
 - total known cameras: 13
-- enabled: 11
-- disabled/offline: 2
-- active: 11 after the newly added enabled cameras are confirmed by health checks
+- enabled: 12
+- disabled/offline: 1
+- active: 12 after the newly added enabled cameras are confirmed by health checks
 - stale: 0
 - latest confirmed scheduler summary before adding new cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
 
-Known disabled/offline camera notes:
+Known disabled/offline camera note:
 
 - block_f_cam_8 / ITU BLOCK F CAM8 remains disabled/offline.
 - IP: 192.168.40.20.
 - Ping and RTSP port 554 are not reachable.
-- new_cam_13 / ITU NEW CAM13 remains disabled/offline.
-- IP: 192.168.40.26.
-- Ping and RTSP port 554 are not reachable from production server.
-- Do not treat these cameras as a system failure unless they are intentionally re-enabled later.
+- Do not treat this camera as a system failure unless it is intentionally re-enabled later.
 
 ## Scheduler PowerShell Commands
 

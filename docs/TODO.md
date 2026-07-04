@@ -7,7 +7,7 @@
 - Backend service ITUAICCTVBackend is Running and Automatic.
 - Task Scheduler task ITU AI CCTV Person Monitor is Ready.
 - Scheduler uses C:\ituaicctv\.venv312\Scripts\python.exe.
-- Camera registry now has 11 enabled cameras; latest confirmed scheduler logs before adding new cameras show status ok and failed 0.
+- Camera registry now has 12 enabled cameras; latest confirmed scheduler logs before adding the newly labelled cameras show status ok and failed 0.
 - Exit code 0 = ok/no attention. Exit code 2 = attention/person detected, not a crash.
 - Evidence is saved only when person_detected=True.
 - New evidence image behavior: full-frame boxes plus zoom crop of highest-confidence person.
@@ -37,8 +37,7 @@
 - [ ] Continue face detection and safe opt-in face recognition roadmap.
 - [ ] Add high-resolution main-stream/snapshot evidence capture after person_detected=True for future face detection.
 - [ ] Add explicit face evidence quality/readiness metadata before any recognition pilot.
-- [ ] Confirm new_cam_11 and new_cam_12 in the next scheduler/dashboard health run.
-- [ ] Identify final physical locations for ITU NEW CAM11, ITU NEW CAM12, and ITU NEW CAM13.
+- [ ] Confirm kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 in the next scheduler/dashboard health run.
 
 ## Production Verification Commands
 
@@ -63,7 +62,7 @@ Checkpoint notes:
 - Backend service listens on 0.0.0.0:8000 and is reachable from LAN / Teleport.
 - Scheduler task ITU AI CCTV Person Monitor is Ready.
 - Latest successful check-all run: enabled=9, person=0, no_person=9, failed=0, exit code 0.
-- Current camera registry after new discovery: total=13, enabled=11, disabled/offline=2.
+- Current camera registry after confirmed VLC labels: total=13, enabled=12, disabled/offline=1.
 - Evidence share: \\192.168.1.254\ituaicctv-evidence.
 - Evidence images are saved only for person_detected=True; no_person events usually have no evidence image.
 
@@ -77,7 +76,6 @@ Checkpoint notes:
 - Unit tests pass with: python -m unittest discover -s tests -p "test_*.py" -v
 - Compile passes with: python -m compileall backend/app
 - block_f_cam_8 / 192.168.40.20 remains disabled because ping and RTSP port 554 are not reachable.
-- new_cam_13 / 192.168.40.26 is disabled because ping and RTSP port 554 are not reachable from production server.
 - sambung.txt is a private local handoff note and should not be committed.
 
 ## Immediate TODO
@@ -90,8 +88,7 @@ Checkpoint notes:
 - [x] Scheduler task server readiness confirmed
 - [x] Document production dashboard and evidence share
 - [ ] Investigate block_f_cam_8 network/IP issue
-- [ ] Confirm RTSP and health status for new_cam_11 / 192.168.40.24 and new_cam_12 / 192.168.40.25 after deployment
-- [ ] Investigate new_cam_13 network/IP issue
+- [ ] Confirm RTSP and health status for kuarantin_cam_11 / 192.168.40.23, biosekuriti_cam_12 / 192.168.40.24, and makmal_cam_13 / 192.168.40.25 after deployment
 - [ ] Avoid overlapping scheduler runs if check-all takes too long
 - [ ] Prepare face detection planning notes later
 - [ ] Prepare number plate recognition planning notes later
@@ -101,10 +98,9 @@ Checkpoint notes:
 Camera registry current summary:
 
 - [x] Total cameras configured: 13
-- [x] Enabled cameras: 11
-- [x] Disabled/offline cameras: 2
+- [x] Enabled cameras: 12
+- [x] Disabled/offline cameras: 1
 - [x] block_f_cam_8 / 192.168.40.20 is disabled/offline because ping and RTSP port 554 are not reachable
-- [x] new_cam_13 / 192.168.40.26 is disabled/offline because ping and RTSP port 554 are not reachable from production server
 
 Camera list:
 
@@ -118,9 +114,9 @@ Camera list:
 - [x] block_f_cam_8 - 192.168.40.20 disabled/offline
 - [x] block_f_cam_9 - 192.168.40.21
 - [x] block_f_cam_10 - 192.168.40.22
-- [x] new_cam_11 - 192.168.40.24 enabled, provisional name ITU NEW CAM11
-- [x] new_cam_12 - 192.168.40.25 enabled, provisional name ITU NEW CAM12
-- [x] new_cam_13 - 192.168.40.26 disabled/offline, provisional name ITU NEW CAM13
+- [x] kuarantin_cam_11 - 192.168.40.23 enabled, confirmed VLC RTSP stream label KUARANTIN
+- [x] biosekuriti_cam_12 - 192.168.40.24 enabled, confirmed VLC RTSP stream label BIOSEKURITI
+- [x] makmal_cam_13 - 192.168.40.25 enabled, confirmed VLC RTSP stream label MAKMAL
 
 ## Backend TODO
 
