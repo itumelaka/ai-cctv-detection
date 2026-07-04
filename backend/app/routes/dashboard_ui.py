@@ -1872,8 +1872,8 @@ def dashboard_tv():
 
     .event-title {
       margin: 0;
-      font-size: clamp(34px, 5vw, 92px);
-      line-height: 0.98;
+      font-size: clamp(28px, 4vw, 72px);
+      line-height: 1;
       letter-spacing: 0;
       max-width: 100%;
       overflow-wrap: anywhere;
@@ -1915,6 +1915,10 @@ def dashboard_tv():
       grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 10px;
       min-width: 0;
+    }
+
+    .evidence-panel {
+      grid-template-rows: auto auto auto;
     }
 
     .live-panel-head,
@@ -1974,21 +1978,35 @@ def dashboard_tv():
     }
 
     .evidence-link {
-      display: block;
-      min-height: 0;
+      display: grid;
+      place-items: center;
+      min-height: 140px;
       max-width: 100%;
+      max-height: clamp(160px, 26vh, 320px);
       border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.08);
       background: rgba(0,0,0,0.18);
       overflow: hidden;
     }
 
+    #evidencePreview {
+      display: grid;
+      min-width: 0;
+      max-width: 100%;
+    }
+
     .evidence-img {
       width: 100%;
-      height: 100%;
+      height: auto;
       max-height: 100%;
       object-fit: contain;
       display: block;
+    }
+
+    #evidenceMeta {
+      position: static;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
 
     .empty {
@@ -2341,6 +2359,12 @@ def dashboard_tv():
       return direct === null ? "-" : direct.toFixed(2);
     }
 
+    function usableCameraValue(value) {
+      if (value === null || value === undefined) return "";
+      const normalized = String(value).trim();
+      return normalized && normalized !== "unknown_camera" ? normalized : "";
+    }
+
     function cameraId(event) {
       const candidates = [
         event?.camera_id,
@@ -2348,7 +2372,7 @@ def dashboard_tv():
         event?.camera?.camera_id,
         event?.camera?.id
       ];
-      return candidates.find((id) => id && id !== "unknown_camera") || "";
+      return candidates.map(usableCameraValue).find(Boolean) || "";
     }
 
     function cameraMap(camerasData) {
@@ -2363,8 +2387,15 @@ def dashboard_tv():
 
     function cameraLabel(event, map) {
       const id = cameraId(event);
-      const label = event?.camera_name || event?.name || event?.camera?.camera_name || event?.camera?.name || map[id] || id;
-      return label && label !== "unknown_camera" ? label : "Unknown camera";
+      const candidates = [
+        event?.camera_name,
+        event?.name,
+        event?.camera?.camera_name,
+        event?.camera?.name,
+        map[id],
+        id
+      ];
+      return candidates.map(usableCameraValue).find(Boolean) || "Unknown camera";
     }
 
     function cameraDisplayName(camera) {
