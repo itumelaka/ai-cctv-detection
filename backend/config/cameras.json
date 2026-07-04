@@ -90,5 +90,34 @@
     "channel": "102",
     "enabled": true,
     "notes": "Direct IP camera. Sub-stream channel 102."
+  },
+  {
+    "id": "new_cam_11",
+    "name": "ITU NEW CAM11",
+    "host": "192.168.40.24",
+    "port": 554,
+    "channel": "102",
+    "enabled": true,
+    "notes": "Provisional camera name. Direct IP camera. RTSP TCP 554 succeeded from production server. Sub-stream channel 102."
+  },
+  {
+    "id": "new_cam_12",
+    "name": "ITU NEW CAM12",
+    "host": "192.168.40.25",
+    "port": 554,
+    "channel": "102",
+    "enabled": true,
+    "notes": "Provisional camera name. Direct IP camera. RTSP TCP 554 succeeded from production server. Sub-stream channel 102."
+  },
+  {
+    "id": "new_cam_13",
+    "name": "ITU NEW CAM13",
+    "host": "192.168.40.26",
+    "port": 554,
+    "channel": "102",
+    "enabled": false,
+    "status": "offline",
+    "health_note": "Ping and RTSP port 554 are not reachable from production server.",
+    "notes": "Disabled because ping and RTSP port 554 are not reachable from production server. Provisional camera name. Direct IP camera sub-stream channel 102."
   }
 ]

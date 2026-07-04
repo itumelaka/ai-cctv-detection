@@ -30,19 +30,20 @@ Production service and scheduler:
 - Task Scheduler task: ITU AI CCTV Person Monitor
 - Task state: Ready
 - Scheduler Python: C:\ituaicctv\.venv312\Scripts\python.exe
-- Scheduler scans 9 enabled cameras.
-- Latest logs show status ok, enabled cameras 9, failed 0.
+- Camera registry now has 11 enabled cameras.
+- Latest confirmed scheduler logs before adding new cameras show status ok, enabled cameras 9, failed 0.
 - Exit code 0 means no person detected / no action.
 - Exit code 2 means attention required / person detected, not a crash.
 
 Camera and health:
 
-- Total cameras: 10
-- Enabled cameras: 9
-- Disabled/offline cameras: 1
-- Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8
+- Total known cameras: 13
+- Enabled cameras: 11
+- Disabled/offline cameras: 2
+- Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20
+- Disabled/offline: new_cam_13 / ITU NEW CAM13 / 192.168.40.26
 - Disabled reason: ping and RTSP port 554 are not reachable.
-- All 9 enabled cameras are active based on recent health checks.
+- Previously confirmed enabled cameras were active based on recent health checks; new_cam_11 and new_cam_12 should be verified after the next scheduler or dashboard health run.
 - Current stale threshold: 120 minutes.
 
 Network:
@@ -139,12 +140,12 @@ Production evidence and logs:
 
 Current expected healthy dashboard state after a successful scheduler run:
 
-- total cameras: 10
-- enabled: 9
-- disabled/offline: 1
-- active: 9
+- total known cameras: 13
+- enabled: 11
+- disabled/offline: 2
+- active: 11 after the newly added enabled cameras are confirmed by health checks
 - stale: 0
-- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- latest confirmed scheduler summary before adding new cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
 
 ## Current Checkpoint
 
@@ -156,9 +157,9 @@ Confirmed at this checkpoint:
 
 - Backend FastAPI works.
 - Hikvision RTSP works.
-- Multi-camera config has 10 cameras.
-- 9 cameras are enabled.
-- 1 camera is disabled: block_f_cam_8 / 192.168.40.20.
+- Multi-camera config has 13 known cameras.
+- 11 cameras are enabled.
+- 2 cameras are disabled/offline: block_f_cam_8 / 192.168.40.20 and new_cam_13 / 192.168.40.26.
 - Disabled camera reason: ping and RTSP port 554 are not reachable.
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
@@ -230,12 +231,19 @@ Completed foundation and dashboard features:
 
 Current camera status:
 
-- Total cameras: 10
-- Enabled cameras: 9
-- Disabled cameras: 1
-- Disabled camera: block_f_cam_8 / 192.168.40.20
+- Total known cameras: 13
+- Enabled cameras: 11
+- Disabled/offline cameras: 2
+- Disabled/offline camera: block_f_cam_8 / 192.168.40.20
+- Disabled/offline camera: new_cam_13 / 192.168.40.26
 - Status: offline
 - Reason: ping and RTSP port 554 are not reachable
+
+New provisional Hikvision cameras:
+
+- new_cam_11 / ITU NEW CAM11 / 192.168.40.24 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
+- new_cam_12 / ITU NEW CAM12 / 192.168.40.25 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
+- new_cam_13 / ITU NEW CAM13 / 192.168.40.26 / channel 102 / disabled/offline, ping and RTSP TCP 554 are not reachable from production server.
 
 Important dashboard URLs:
 
@@ -287,19 +295,22 @@ Current scheduler status:
 
 Current expected healthy dashboard state after a successful scheduler run:
 
-- total cameras: 10
-- enabled: 9
-- disabled/offline: 1
-- active: 9
+- total known cameras: 13
+- enabled: 11
+- disabled/offline: 2
+- active: 11 after the newly added enabled cameras are confirmed by health checks
 - stale: 0
-- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- latest confirmed scheduler summary before adding new cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
 
-Known disabled/offline camera:
+Known disabled/offline cameras:
 
 - block_f_cam_8 / ITU BLOCK F CAM8
 - IP: 192.168.40.20
 - Reason: ping and RTSP port 554 are not reachable
-- Do not treat this as a system failure unless the camera is intentionally re-enabled later
+- new_cam_13 / ITU NEW CAM13
+- IP: 192.168.40.26
+- Reason: ping and RTSP port 554 are not reachable from production server
+- Do not treat these as system failures unless the cameras are intentionally re-enabled later
 
 ## Confirmed Working Camera
 
@@ -416,11 +427,14 @@ Confirmed:
 
 - GET /cameras/audit works
 - GET /monitor/person/check-all works
-- 9 enabled cameras can be monitored
-- 1 camera is disabled temporarily:
+- Current registry has 11 enabled cameras; 9 were confirmed in the earlier multi-camera monitor test before new_cam_11 and new_cam_12 were added.
+- 2 cameras are disabled/offline:
   - block_f_cam_8
   - 192.168.40.20
   - Reason: not reachable by ping or RTSP port 554
+  - new_cam_13
+  - 192.168.40.26
+  - Reason: not reachable by ping or RTSP port 554 from production server
 - Multi-camera scheduler script works:
   - backend/scripts/monitor_person_all_once.py
   - backend/scripts/run_monitor_person_all_once.bat
@@ -476,12 +490,17 @@ Current enabled cameras:
 - block_f_cam_7
 - block_f_cam_9
 - block_f_cam_10
+- new_cam_11
+- new_cam_12
 
-Disabled camera:
+Disabled cameras:
 
 - block_f_cam_8
 - IP: 192.168.40.20
 - Reason: not reachable by ping or RTSP port 554
+- new_cam_13
+- IP: 192.168.40.26
+- Reason: not reachable by ping or RTSP port 554 from production server
 
 Dashboard endpoint example:
 
@@ -499,20 +518,23 @@ This endpoint is lightweight because it reads existing camera configuration and 
 
 Current confirmed output:
 
-- cameras_total: 10
-- cameras_enabled: 9
-- cameras_disabled: 1
+- cameras_total: 13
+- cameras_enabled: 11
+- cameras_disabled: 2
 - total_events: 114
 - person_detected_count: 8
 - no_person_count: 106
 - evidence_count: 8
 - cooldown_skipped_count: 0
 
-Disabled camera:
+Disabled cameras:
 
 - block_f_cam_8
 - IP: 192.168.40.20
 - Current issue: not reachable by ping or RTSP port 554
+- new_cam_13
+- IP: 192.168.40.26
+- Current issue: not reachable by ping or RTSP port 554 from production server
 
 Dashboard summary links included:
 
@@ -712,9 +734,9 @@ This endpoint is lightweight because it reads existing camera configuration and 
 
 Current confirmed output:
 
-- cameras_total: 10
-- cameras_enabled: 9
-- cameras_disabled: 1
+- cameras_total: 13
+- cameras_enabled: 11
+- cameras_disabled: 2
 - total_events: 114
 - person_detected_count: 8
 - no_person_count: 106

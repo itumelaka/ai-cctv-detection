@@ -32,15 +32,16 @@ Production server status:
 - Task Scheduler task: ITU AI CCTV Person Monitor
 - Task state: Ready
 - Scheduler Python: C:\ituaicctv\.venv312\Scripts\python.exe
-- Scheduler scans 9 enabled cameras. Latest logs show status ok, enabled=9, failed=0.
+- Camera registry now has 11 enabled cameras. Latest confirmed scheduler logs before adding new cameras show status ok, enabled=9, failed=0.
 
 Camera and network status:
 
-- Total cameras: 10
-- Enabled cameras: 9
-- Disabled/offline cameras: 1
-- Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8, because ping and RTSP port 554 are not reachable.
-- All 9 enabled cameras are active based on recent health checks.
+- Total known cameras: 13
+- Enabled cameras: 11
+- Disabled/offline cameras: 2
+- Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20, because ping and RTSP port 554 are not reachable.
+- Disabled/offline: new_cam_13 / ITU NEW CAM13 / 192.168.40.26, because ping and RTSP port 554 are not reachable from production server.
+- Previously confirmed enabled cameras were active based on recent health checks; new_cam_11 and new_cam_12 should be verified after the next scheduler or dashboard health run.
 - Production server LAN IP: 192.168.1.254
 - GOVNET NIC: 10.65.28.254
 - CCTV subnet: 192.168.40.0/24
@@ -177,9 +178,9 @@ Confirmed at this checkpoint:
 
 - Backend FastAPI works.
 - Hikvision RTSP works.
-- Multi-camera config has 10 cameras.
-- 9 cameras are enabled.
-- 1 camera is disabled: block_f_cam_8 / 192.168.40.20.
+- Multi-camera config has 13 known cameras.
+- 11 cameras are enabled.
+- 2 cameras are disabled/offline: block_f_cam_8 / 192.168.40.20 and new_cam_13 / 192.168.40.26.
 - Disabled camera reason: ping and RTSP port 554 are not reachable.
 - GET /dashboard-ui is usable.
 - GET /dashboard/health is usable.
@@ -285,12 +286,19 @@ Completed:
 
 Current configured camera status:
 
-- Total cameras: 10
-- Enabled cameras: 9
-- Disabled cameras: 1
-- Disabled camera: block_f_cam_8 / 192.168.40.20
+- Total known cameras: 13
+- Enabled cameras: 11
+- Disabled/offline cameras: 2
+- Disabled/offline camera: block_f_cam_8 / 192.168.40.20
+- Disabled/offline camera: new_cam_13 / 192.168.40.26
 - Status: offline
 - Reason: ping and RTSP port 554 are not reachable
+
+New provisional Hikvision cameras:
+
+- new_cam_11 / ITU NEW CAM11 / 192.168.40.24 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
+- new_cam_12 / ITU NEW CAM12 / 192.168.40.25 / channel 102 / enabled, RTSP TCP 554 succeeded from production server.
+- new_cam_13 / ITU NEW CAM13 / 192.168.40.26 / channel 102 / disabled/offline, ping and RTSP TCP 554 are not reachable from production server.
 
 ## Current Working Camera
 
@@ -451,19 +459,22 @@ Per-camera dashboard health includes:
 
 Current expected healthy dashboard state after a successful scheduler run:
 
-- total cameras: 10
-- enabled: 9
-- disabled/offline: 1
-- active: 9
+- total known cameras: 13
+- enabled: 11
+- disabled/offline: 2
+- active: 11 after the newly added enabled cameras are confirmed by health checks
 - stale: 0
-- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- latest confirmed scheduler summary before adding new cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
 
-Known camera note:
+Known disabled/offline camera notes:
 
 - block_f_cam_8 / ITU BLOCK F CAM8 remains disabled/offline.
 - IP: 192.168.40.20.
 - Ping and RTSP port 554 are not reachable.
-- Do not treat this camera as a system failure unless it is intentionally re-enabled later.
+- new_cam_13 / ITU NEW CAM13 remains disabled/offline.
+- IP: 192.168.40.26.
+- Ping and RTSP port 554 are not reachable from production server.
+- Do not treat these cameras as a system failure unless they are intentionally re-enabled later.
 
 ## Scheduler PowerShell Commands
 
