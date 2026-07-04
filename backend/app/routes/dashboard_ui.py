@@ -2370,7 +2370,8 @@ def dashboard_tv():
         event?.camera_id,
         event?.camera_id_from_log,
         event?.camera?.camera_id,
-        event?.camera?.id
+        event?.camera?.id,
+        typeof event?.camera === "string" ? event.camera : ""
       ];
       return candidates.map(usableCameraValue).find(Boolean) || "";
     }
@@ -2410,26 +2411,49 @@ def dashboard_tv():
       return map;
     }
 
+    function cameraHealth(camera, healthData = latestHealthData) {
+      const id = camera?.camera_id || camera?.id;
+      return healthByCamera(healthData)[id] || {};
+    }
+
+    function cameraHealthStatus(camera, healthData = latestHealthData) {
+      const health = cameraHealth(camera, healthData);
+      return health.health_status || (camera?.enabled === false ? "disabled" : camera?.status || "active");
+    }
+
+    function cameraIsSelectable(camera, healthData = latestHealthData) {
+      const status = cameraHealthStatus(camera, healthData);
+      return camera?.enabled !== false && status !== "offline" && status !== "disabled";
+    }
+
+    function cameraById(camerasData, cameraId) {
+      return (camerasData?.cameras || []).find((camera) => camera.camera_id === cameraId);
+    }
+
     function selectedCamera() {
       return (latestCamerasData?.cameras || []).find((camera) => camera.camera_id === selectedCameraId);
     }
 
-    function preferredLiveCameraId(camerasData, eventsData, summary) {
+    function preferredLiveCameraId(camerasData, eventsData, summary, healthData = latestHealthData) {
       const cameras = camerasData?.cameras || [];
-      const enabledIds = new Set(cameras.filter((camera) => camera.enabled !== false).map((camera) => camera.camera_id));
       const events = eventsData?.events || [];
-      const candidates = [
-        events.find((event) => event?.person_detected),
-        summary?.events?.latest_event,
-        events[0]
-      ];
+      const selectable = (cameraId) => {
+        const camera = cameraById(camerasData, cameraId);
+        return camera && cameraIsSelectable(camera, healthData);
+      };
 
-      for (const event of candidates) {
-        const id = cameraId(event);
-        if (id && enabledIds.has(id)) return id;
-      }
+      const latestPersonId = cameraId(events.find((event) => event?.person_detected));
+      if (latestPersonId && selectable(latestPersonId)) return latestPersonId;
 
-      return cameras.find((camera) => camera.enabled !== false)?.camera_id || cameras[0]?.camera_id || "";
+      const activeHealth = (healthData?.per_camera || []).find((camera) => {
+        return camera.health_status === "active" && selectable(camera.camera_id);
+      });
+      if (activeHealth?.camera_id) return activeHealth.camera_id;
+
+      const latestEventId = cameraId(summary?.events?.latest_event) || cameraId(events[0]);
+      if (latestEventId && selectable(latestEventId)) return latestEventId;
+
+      return cameras.find((camera) => cameraIsSelectable(camera, healthData))?.camera_id || "";
     }
 
     function selectLiveCamera(cameraId, forceRefresh = true) {
@@ -2447,18 +2471,23 @@ def dashboard_tv():
     function renderCameraSelector(camerasData, eventsData, summary) {
       const selector = el("cameraSelector");
       const cameras = camerasData?.cameras || [];
+      const selectableCameras = cameras.filter((camera) => cameraIsSelectable(camera));
+      const dropdownCameras = selectableCameras.length ? selectableCameras : cameras;
       selector.innerHTML = "";
 
-      cameras.forEach((camera) => {
+      dropdownCameras.forEach((camera) => {
+        const selectable = cameraIsSelectable(camera);
         const option = document.createElement("option");
         option.value = camera.camera_id;
-        option.textContent = `${cameraDisplayName(camera)} (${camera.camera_id})`;
-        option.disabled = camera.enabled === false;
+        option.textContent = selectable
+          ? `${cameraDisplayName(camera)} (${camera.camera_id})`
+          : `${cameraDisplayName(camera)} (${camera.camera_id}) - disabled/offline`;
+        option.disabled = !selectable;
         selector.appendChild(option);
       });
 
       const selected = cameras.find((camera) => camera.camera_id === selectedCameraId);
-      if (!selectedCameraId || !selected || selected.enabled === false) {
+      if (!selectedCameraId || !selected || !cameraIsSelectable(selected)) {
         selectedCameraId = preferredLiveCameraId(camerasData, eventsData, summary);
       }
 
@@ -2481,8 +2510,7 @@ def dashboard_tv():
         return;
       }
 
-      const health = healthByCamera(latestHealthData)[camera.camera_id] || {};
-      const status = health.health_status || (camera.enabled ? "active" : "disabled");
+      const status = cameraHealthStatus(camera);
       el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Health: ${status}`;
       el("liveFrameStatus").textContent = "MJPEG live proxy | selected camera only.";
     }
@@ -2493,7 +2521,7 @@ def dashboard_tv():
       const empty = el("liveCameraEmpty");
       const status = el("liveFrameStatus");
 
-      if (!camera || camera.enabled === false) {
+      if (!camera || !cameraIsSelectable(camera)) {
         status.textContent = "Live stream unavailable for the selected camera.";
         image.removeAttribute("src");
         image.classList.remove("ready");
@@ -2658,14 +2686,17 @@ def dashboard_tv():
       }));
       cameras.slice(0, 10).forEach((camera, index) => {
         const health = healthByCamera[camera.camera_id] || {};
-        const status = health.health_status || (camera.enabled ? "active" : "disabled");
+        const status = cameraHealthStatus(camera, healthData);
         const tone = status === "active" ? "ok" : (status === "offline" || status === "disabled" ? "danger" : "warn");
+        const selectable = cameraIsSelectable(camera, healthData);
         const item = document.createElement("div");
         item.className = `camera-card ${camera.camera_id === selectedCameraId ? "selected" : ""}`;
         item.dataset.cameraId = camera.camera_id;
         item.addEventListener("click", () => {
-          if (camera.enabled !== false) {
+          if (selectable) {
             selectLiveCamera(camera.camera_id);
+          } else {
+            el("liveFrameStatus").textContent = "Camera is disabled/offline.";
           }
         });
         item.innerHTML = `
