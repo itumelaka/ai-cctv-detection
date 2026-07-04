@@ -66,6 +66,14 @@ def send_person_alert(event: dict) -> bool:
     camera_host = camera.get("host", "")
     timestamp = event.get("timestamp", "")
     detections_count = event.get("detections_count", 0)
+    detections = event.get("detections") or []
+    confidences = [
+        detection.get("confidence")
+        for detection in detections
+        if isinstance(detection.get("confidence"), (int, float))
+    ]
+    max_confidence = max(confidences) if confidences else None
+    confidence_threshold = event.get("confidence_threshold")
     evidence_path = _resolve_evidence_path(event.get("evidence_path"))
 
     caption = f"<b>Person Detected</b>\nCamera: {camera_name}"
@@ -77,6 +85,12 @@ def send_person_alert(event: dict) -> bool:
 
     if detections_count:
         caption += f"\nDetections: {detections_count}"
+
+    if max_confidence is not None:
+        caption += f"\nConfidence: {max_confidence:.2f}"
+
+    if confidence_threshold is not None:
+        caption += f"\nThreshold: {float(confidence_threshold):.2f}"
 
     sent = _send_photo(caption=caption, image_path=evidence_path)
 

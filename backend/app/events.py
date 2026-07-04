@@ -108,6 +108,7 @@ def _build_person_event(detection_result: dict, snapshot_func, camera_context: d
         "person_detected": person_detected,
         "detections_count": detections_count,
         "detections": detection_result["detections"],
+        "confidence_threshold": detection_result.get("confidence_threshold"),
         "evidence_path": evidence_path,
         "cooldown_active": cooldown_active,
         "cooldown_seconds": cooldown_seconds

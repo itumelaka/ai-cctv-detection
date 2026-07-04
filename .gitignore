@@ -31,5 +31,10 @@ backend/data/*.jsonl
 # Runtime evidence images
 backend/data/evidence/
 
+# Private face data and biometric artifacts
+backend/data/faces/
+backend/data/face-embeddings/
+backend/data/face-reference/
+
 # Scheduled task logs
 backend/data/task-logs/

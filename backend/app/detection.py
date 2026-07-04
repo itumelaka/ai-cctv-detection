@@ -13,12 +13,17 @@ def get_model():
     return YOLO(MODEL_NAME)
 
 
-def detect_objects(frame, class_name_filter: str | None = None):
+def detect_objects(
+    frame,
+    class_name_filter: str | None = None,
+    confidence_threshold: float | None = None
+):
     model = get_model()
+    confidence = settings.yolo_confidence if confidence_threshold is None else confidence_threshold
 
     results = model.predict(
         source=frame,
-        conf=settings.yolo_confidence,
+        conf=confidence,
         verbose=False,
         device="cpu"
     )
@@ -54,13 +59,20 @@ def detect_objects(frame, class_name_filter: str | None = None):
     return detections
 
 
-def _build_detection_response(frame, detections, camera_info: dict | None = None, filter_name: str | None = None):
+def _build_detection_response(
+    frame,
+    detections,
+    camera_info: dict | None = None,
+    filter_name: str | None = None,
+    confidence_threshold: float | None = None
+):
     height, width = frame.shape[:2]
+    confidence = settings.yolo_confidence if confidence_threshold is None else confidence_threshold
 
     response = {
         "status": "ok",
         "model": MODEL_NAME,
-        "confidence_threshold": settings.yolo_confidence,
+        "confidence_threshold": confidence,
         "camera": {
             "frame_width": width,
             "frame_height": height
@@ -94,18 +106,34 @@ def run_yolo_detection() -> dict:
 
 def run_person_detection() -> dict:
     frame = capture_frame()
-    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
-    return _build_detection_response(frame, detections, filter_name=PERSON_CLASS_NAME)
+    confidence = settings.person_confidence_threshold
+    detections = detect_objects(
+        frame,
+        class_name_filter=PERSON_CLASS_NAME,
+        confidence_threshold=confidence
+    )
+    return _build_detection_response(
+        frame,
+        detections,
+        filter_name=PERSON_CLASS_NAME,
+        confidence_threshold=confidence
+    )
 
 
 def run_person_detection_for_camera(camera: dict) -> dict:
     frame = capture_frame_for_camera(camera)
-    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    confidence = settings.person_confidence_threshold
+    detections = detect_objects(
+        frame,
+        class_name_filter=PERSON_CLASS_NAME,
+        confidence_threshold=confidence
+    )
     return _build_detection_response(
         frame,
         detections,
         camera_info=camera,
-        filter_name=PERSON_CLASS_NAME
+        filter_name=PERSON_CLASS_NAME,
+        confidence_threshold=confidence
     )
 
 
@@ -154,13 +182,21 @@ def run_yolo_snapshot_jpeg() -> bytes:
 
 def run_person_snapshot_jpeg() -> bytes:
     frame = capture_frame()
-    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    detections = detect_objects(
+        frame,
+        class_name_filter=PERSON_CLASS_NAME,
+        confidence_threshold=settings.person_confidence_threshold
+    )
     frame = _draw_detections(frame, detections)
     return _encode_jpeg(frame)
 
 
 def run_person_snapshot_jpeg_for_camera(camera: dict) -> bytes:
     frame = capture_frame_for_camera(camera)
-    detections = detect_objects(frame, class_name_filter=PERSON_CLASS_NAME)
+    detections = detect_objects(
+        frame,
+        class_name_filter=PERSON_CLASS_NAME,
+        confidence_threshold=settings.person_confidence_threshold
+    )
     frame = _draw_detections(frame, detections)
     return _encode_jpeg(frame)

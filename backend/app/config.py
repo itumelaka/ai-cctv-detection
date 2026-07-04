@@ -16,6 +16,7 @@ class Settings:
     cctv_channel: str = os.getenv("CCTV_CHANNEL", "101")
 
     yolo_confidence: float = float(os.getenv("YOLO_CONFIDENCE", "0.35"))
+    person_confidence_threshold: float = float(os.getenv("PERSON_CONFIDENCE_THRESHOLD", "0.60"))
     person_event_cooldown_seconds: int = int(os.getenv("PERSON_EVENT_COOLDOWN_SECONDS", "300"))
 
     telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
