@@ -32,14 +32,14 @@ Operational foundation:
 
 ## Forward Backlog
 
-1. Person detection reliability: per-camera thresholds, minimum bounding box size, false-positive review labels, dashboard confidence display, and ignore-zone/polygon masks for known static false positives such as trees or topiary.
+1. Person detection reliability: per-camera thresholds, minimum bounding box size, calibrated ignore-zone/polygon masks for known static false positives such as trees, topiary, or fixed pipes, and better dashboard review metrics.
 2. Zone intrusion detection: polygon zones per camera and restricted zone alerts.
 3. Line crossing detection: virtual line and direction.
 4. Loitering detection: duration-based alert.
 5. Vehicle detection and parking monitoring.
 6. Number plate recognition as a future module.
 7. Camera health AI: blur, dark, blocked, angle changed, stale frame.
-8. Human review workflow: true positive, false positive, ignore, download.
+8. Human review workflow: event review metadata now supports valid, false positive, ignored, and follow-up statuses; future work should add richer filtering, notes, exports, and reviewer attribution.
 9. AI risk score: confidence, zone, after-hours, camera importance.
 10. After-hours detection.
 11. Improve fullscreen command center / TV mode after real TV review.

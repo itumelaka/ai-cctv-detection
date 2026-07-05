@@ -45,6 +45,15 @@ For new detections, the evidence image is a clearer composite:
 
 Telegram sends the saved evidence image, so new alerts use the clearer composite image automatically.
 
+## False Positive Review and Ignore Zones
+
+- Global person confidence remains 0.60 unless a camera overrides it.
+- makmal_cam_13 and kuarantin_cam_11 currently use 0.75 because of known static false positives.
+- Camera configs may define optional `ignore_zones` polygon masks with normalized points from 0.0 to 1.0.
+- Placeholder zones for makmal_cam_13 and kuarantin_cam_11 are present but disabled until calibrated against reviewed frames.
+- When an ignore zone is enabled, detections with a bounding-box center inside the polygon are suppressed before event logging, evidence saving, and Telegram alerting.
+- Event reviews are stored locally in ignored runtime data under `backend/data/event-reviews/`.
+
 Face readiness and internal recognition status:
 
 - Face readiness / face quality assessment is implemented and conservative. It is not identity recognition by itself.
@@ -91,7 +100,12 @@ GET /detections/person/snapshot
 GET /events/person
 GET /events/logs
 GET /events/logs?limit=5
+GET /events/latest-with-reviews
 GET /events/stats
+GET /events/reviews
+GET /events/reviews/{event_id}
+PUT /events/reviews/{event_id}
+POST /events/reviews/{event_id}
 GET /events/evidence/{filename}
 ```
 

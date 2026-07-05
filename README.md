@@ -143,7 +143,10 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 - PERSON_CONFIDENCE_THRESHOLD defaults to 0.60. This reduces false positives but can miss distant or low-light people.
 - makmal_cam_13 uses `person_confidence_threshold: 0.75` because a tree/topiary was detected as a person around 0.62-0.63.
 - kuarantin_cam_11 uses `person_confidence_threshold: 0.75` because a fixed blue pipe was detected as a person around 0.65.
-- Higher per-camera thresholds are a temporary tuning approach; future ignore-zone / polygon masks should exclude fixed false-positive objects.
+- Higher per-camera thresholds are a temporary tuning approach. Optional camera `ignore_zones` polygon masks are now supported for fixed false-positive objects.
+- Placeholder ignore-zone polygons exist for makmal_cam_13 and kuarantin_cam_11, but they are disabled by default until reviewed against real frames and calibrated.
+- Enabled ignore zones suppress person detections whose bounding-box center falls inside the configured polygon before events, evidence, or Telegram alerts are produced.
+- Event review metadata can be stored locally through `/events/reviews/{event_id}` with statuses such as `valid`, `false_positive`, `ignored`, and `needs_follow_up`.
 - Telegram person alerts include confidence and active threshold when available.
 - New person evidence uses a clearer composite image: full CCTV frame with bounding boxes plus a zoom crop of the highest-confidence person.
 - High-resolution evidence is attempted after person detection. Detection can stay on lightweight channel 102, while evidence may try higher-resolution/main stream channel 101 when available.

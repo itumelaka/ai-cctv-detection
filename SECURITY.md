@@ -12,6 +12,8 @@ Dokumen ini menerangkan garis panduan keselamatan untuk projek **Hikvision AI CC
 - Primary task `ITU AI CCTV Live Monitor` is confirmed `Running`.
 - Old 5-minute task `ITU AI CCTV Person Monitor` is `Disabled` and retained as backup.
 - Windows Firewall allows inbound TCP `8000` for dashboard/API access.
+- Event review metadata is local operational data stored under ignored runtime data in `backend/data/event-reviews/`.
+- Ignore-zone polygons are used only to suppress known static false positives and must be calibrated from authorized operational review.
 - UDM Pro allows server `192.168.1.254` to CCTV subnet `192.168.40.0/24` on TCP `554`.
 - Current camera inventory has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera: `block_f_cam_8 / 192.168.40.20`.
 - The mistaken `192.168.40.26` camera entry is not part of the current inventory.

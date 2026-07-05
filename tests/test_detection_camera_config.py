@@ -53,6 +53,107 @@ class DetectionCameraConfigTests(unittest.TestCase):
             detection.settings.person_confidence_threshold,
         )
 
+    def test_point_in_polygon_detects_inside_and_outside_points(self):
+        polygon = [(0, 0), (10, 0), (10, 10), (0, 10)]
+
+        self.assertTrue(detection.point_in_polygon((5, 5), polygon))
+        self.assertFalse(detection.point_in_polygon((15, 5), polygon))
+
+    def test_enabled_ignore_zone_suppresses_detection_inside_polygon(self):
+        camera = {
+            "id": "test_cam",
+            "ignore_zones": [
+                {
+                    "id": "static_object",
+                    "label": "Static object",
+                    "type": "polygon",
+                    "enabled": True,
+                    "points": [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]],
+                }
+            ],
+        }
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.80,
+                "box": {"x1": 10, "y1": 10, "x2": 30, "y2": 30},
+            }
+        ]
+
+        filtered, ignored = detection.filter_detections_by_ignore_zones(
+            camera,
+            detections,
+            frame_width=100,
+            frame_height=100,
+        )
+
+        self.assertEqual(filtered, [])
+        self.assertEqual(len(ignored), 1)
+        self.assertTrue(ignored[0]["ignored_by_zone"])
+        self.assertEqual(ignored[0]["ignore_zone_id"], "static_object")
+
+    def test_disabled_ignore_zone_does_not_suppress_detection(self):
+        camera = {
+            "id": "test_cam",
+            "ignore_zones": [
+                {
+                    "id": "disabled_zone",
+                    "label": "Disabled zone",
+                    "type": "polygon",
+                    "enabled": False,
+                    "points": [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]],
+                }
+            ],
+        }
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.80,
+                "box": {"x1": 10, "y1": 10, "x2": 30, "y2": 30},
+            }
+        ]
+
+        filtered, ignored = detection.filter_detections_by_ignore_zones(
+            camera,
+            detections,
+            frame_width=100,
+            frame_height=100,
+        )
+
+        self.assertEqual(filtered, detections)
+        self.assertEqual(ignored, [])
+
+    def test_detection_outside_ignore_zone_is_kept(self):
+        camera = {
+            "id": "test_cam",
+            "ignore_zones": [
+                {
+                    "id": "static_object",
+                    "label": "Static object",
+                    "type": "polygon",
+                    "enabled": True,
+                    "points": [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]],
+                }
+            ],
+        }
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.80,
+                "box": {"x1": 70, "y1": 70, "x2": 90, "y2": 90},
+            }
+        ]
+
+        filtered, ignored = detection.filter_detections_by_ignore_zones(
+            camera,
+            detections,
+            frame_width=100,
+            frame_height=100,
+        )
+
+        self.assertEqual(filtered, detections)
+        self.assertEqual(ignored, [])
+
     def test_high_resolution_evidence_uses_high_res_detection_boxes(self):
         original_detection = {
             "person_detected": True,

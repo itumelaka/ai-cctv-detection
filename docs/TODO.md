@@ -26,10 +26,13 @@
 ## Current Production Backlog
 
 - [x] Add per-camera person threshold support; makmal_cam_13 uses 0.75 for known topiary/tree false positive, and kuarantin_cam_11 uses 0.75 for known blue-pipe false positive.
+- [x] Add backend ignore-zone polygon mask support for camera-specific static false positives.
+- [x] Add disabled placeholder ignore-zone polygons for makmal_cam_13 and kuarantin_cam_11.
+- [x] Add local event review API/storage for valid, false positive, ignored, and follow-up decisions.
 - [ ] Add minimum bounding box size filtering for person detections.
-- [ ] Add false-positive review labels in dashboard.
-- [ ] Improve dashboard confidence display and review workflow.
-- [ ] Add per-camera ignore zones / polygon masks for known static false positives such as trees, topiary, or the fixed blue pipe in kuarantin_cam_11, instead of relying only on higher thresholds.
+- [ ] Calibrate makmal_cam_13 and kuarantin_cam_11 ignore-zone polygon points from reviewed production frames before enabling them.
+- [ ] Add a visual dashboard editor for drawing/testing ignore zones on camera snapshots.
+- [ ] Improve dashboard confidence display and review workflow with filters, reviewer notes, and exports.
 - [ ] Add polygon zone intrusion detection per camera.
 - [ ] Add restricted zone alerts.
 - [ ] Add line crossing detection with direction.

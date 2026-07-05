@@ -11,6 +11,8 @@
 - Backend listens on port 8000.
 - Windows Firewall allows inbound TCP 8000 for dashboard/API.
 - UDM Pro allows server 192.168.1.254 to CCTV subnet 192.168.40.0/24 on TCP 554.
+- Event review decisions are local operational metadata and are stored under ignored runtime data in `backend/data/event-reviews/`.
+- Ignore-zone polygons are camera configuration only. They should be calibrated from reviewed evidence and should not include private face images, embeddings, or identity data.
 - Current camera inventory has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera. The mistaken 192.168.40.26 entry is not part of the current inventory.
 - Evidence share: \\192.168.1.254\ituaicctv-evidence
 - Normal evidence share access: Read for Everyone.

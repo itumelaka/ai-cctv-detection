@@ -26,6 +26,103 @@ FACE_BLUR_POOR_THRESHOLD = 70.0
 FACE_BLUR_GOOD_THRESHOLD = 150.0
 
 
+def _bbox_center(detection: dict) -> tuple[float, float]:
+    box = detection["box"]
+    return (
+        (float(box["x1"]) + float(box["x2"])) / 2,
+        (float(box["y1"]) + float(box["y2"])) / 2,
+    )
+
+
+def normalized_polygon_to_pixels(
+    points: list[list[float]] | list[tuple[float, float]],
+    frame_width: int,
+    frame_height: int,
+) -> list[tuple[float, float]]:
+    return [
+        (
+            max(0.0, min(1.0, float(point[0]))) * frame_width,
+            max(0.0, min(1.0, float(point[1]))) * frame_height,
+        )
+        for point in points
+    ]
+
+
+def point_in_polygon(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
+    if len(polygon) < 3:
+        return False
+
+    x, y = point
+    inside = False
+    previous_x, previous_y = polygon[-1]
+
+    for current_x, current_y in polygon:
+        crosses = (current_y > y) != (previous_y > y)
+        if crosses:
+            slope_x = (
+                (previous_x - current_x) * (y - current_y)
+                / ((previous_y - current_y) or 1e-12)
+                + current_x
+            )
+            if x < slope_x:
+                inside = not inside
+
+        previous_x, previous_y = current_x, current_y
+
+    return inside
+
+
+def _active_ignore_zones(camera: dict | None) -> list[dict]:
+    if not camera:
+        return []
+
+    return [
+        zone for zone in camera.get("ignore_zones", [])
+        if zone.get("enabled") and zone.get("type") == "polygon"
+    ]
+
+
+def filter_detections_by_ignore_zones(
+    camera: dict | None,
+    detections: list[dict],
+    frame_width: int,
+    frame_height: int,
+) -> tuple[list[dict], list[dict]]:
+    filtered_detections = []
+    ignored_detections = []
+    active_zones = _active_ignore_zones(camera)
+
+    if not active_zones:
+        return detections, ignored_detections
+
+    for detection in detections:
+        center = _bbox_center(detection)
+        ignored_detection = None
+
+        for zone in active_zones:
+            pixel_polygon = normalized_polygon_to_pixels(
+                zone.get("points", []),
+                frame_width,
+                frame_height,
+            )
+
+            if point_in_polygon(center, pixel_polygon):
+                ignored_detection = {
+                    **detection,
+                    "ignored_by_zone": True,
+                    "ignore_zone_id": zone.get("id"),
+                    "ignore_zone_label": zone.get("label"),
+                }
+                break
+
+        if ignored_detection:
+            ignored_detections.append(ignored_detection)
+        else:
+            filtered_detections.append(detection)
+
+    return filtered_detections, ignored_detections
+
+
 def _person_confidence_threshold(camera: dict | None = None) -> float:
     if camera and camera.get("person_confidence_threshold") is not None:
         return float(camera.get("person_confidence_threshold"))
@@ -186,6 +283,13 @@ def run_person_detection_with_frame_for_camera(camera: dict) -> tuple[dict, obje
         class_name_filter=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
+    frame_height, frame_width = frame.shape[:2]
+    detections, ignored_detections = filter_detections_by_ignore_zones(
+        camera,
+        detections,
+        frame_width,
+        frame_height,
+    )
     detection_response = _build_detection_response(
         frame,
         detections,
@@ -193,6 +297,16 @@ def run_person_detection_with_frame_for_camera(camera: dict) -> tuple[dict, obje
         filter_name=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
+    active_ignore_zones = _active_ignore_zones(camera)
+    configured_ignore_zones = camera.get("ignore_zones", [])
+    detection_response["ignore_zones"] = {
+        "configured_count": len(configured_ignore_zones),
+        "enabled_count": len(active_ignore_zones),
+    }
+
+    if ignored_detections:
+        detection_response["ignored_detections_count"] = len(ignored_detections)
+        detection_response["ignored_detections"] = ignored_detections
 
     return detection_response, frame
 
@@ -635,22 +749,37 @@ def build_person_evidence_from_detection(
                 class_name_filter=PERSON_CLASS_NAME,
                 confidence_threshold=_person_confidence_threshold(camera),
             )
+            high_res_height, high_res_width = high_res_frame.shape[:2]
+            high_res_detections, ignored_high_res_detections = (
+                filter_detections_by_ignore_zones(
+                    camera,
+                    high_res_detections,
+                    high_res_width,
+                    high_res_height,
+                )
+            )
 
             if high_res_detections:
                 evidence_detections = high_res_detections
                 evidence_frame = high_res_frame
             else:
                 camera_id = camera.get("id") if camera else "default_camera"
+                ignored_note = (
+                    f" {len(ignored_high_res_detections)} high-resolution "
+                    "detection(s) were inside enabled ignore zones."
+                    if ignored_high_res_detections else ""
+                )
                 logger.warning(
                     "High-resolution evidence re-detection found no person for "
-                    "%s channel %s; falling back to detection frame.",
+                    "%s channel %s; falling back to detection frame.%s",
                     camera_id,
                     channel,
+                    ignored_note,
                 )
                 print(
                     "WARNING: High-resolution evidence re-detection found no "
                     f"person for {camera_id} channel {channel}; falling back "
-                    "to detection frame."
+                    f"to detection frame.{ignored_note}"
                 )
         except Exception as error:
             camera_id = camera.get("id") if camera else "default_camera"

@@ -539,6 +539,20 @@ def dashboard_ui():
       animation: alertDot 1.7s ease-in-out infinite;
     }
 
+    .review-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .review-button {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
     .thumb {
       width: 120px;
       height: 82px;
@@ -1142,6 +1156,23 @@ def dashboard_ui():
       return response.json();
     }
 
+    async function updateEventReview(reviewId, reviewStatus) {
+      if (!reviewId) {
+        return;
+      }
+
+      await fetch(`/events/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          review_status: reviewStatus,
+          reviewed_by: "dashboard-ui"
+        })
+      });
+
+      await loadDashboard();
+    }
+
     function addField(container, label, value) {
       const field = document.createElement("div");
       field.className = "field";
@@ -1278,7 +1309,29 @@ def dashboard_ui():
         message.className = "meta";
         message.textContent = text(event.message, "");
 
-        details.append(head, meta, message);
+        const review = event.review || {};
+        const reviewMeta = document.createElement("div");
+        reviewMeta.className = "meta";
+        reviewMeta.textContent = `Review: ${text(review.review_status, "unreviewed")}`;
+
+        const reviewActions = document.createElement("div");
+        reviewActions.className = "review-actions";
+
+        [
+          ["valid", "Valid"],
+          ["false_positive", "False positive"],
+          ["needs_follow_up", "Follow up"]
+        ].forEach(([status, label]) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "review-button";
+          button.textContent = label;
+          button.title = `Mark event as ${label}`;
+          button.addEventListener("click", () => updateEventReview(event.review_id, status));
+          reviewActions.appendChild(button);
+        });
+
+        details.append(head, meta, message, reviewMeta, reviewActions);
         item.append(dot, details);
 
         if (event.evidence_url) {
@@ -1500,7 +1553,11 @@ def dashboard_ui():
           makeBadge(camera.enabled ? "enabled" : "disabled", camera.enabled ? "ok" : "muted"),
           makeBadge(`health ${status}`, healthTone(status)),
           makeBadge(`events ${text(stats?.total_events, "0")}`, "neutral"),
-          makeBadge(`person ${text(stats?.person_events, "0")}`, stats?.person_events ? "danger" : "muted")
+          makeBadge(`person ${text(stats?.person_events, "0")}`, stats?.person_events ? "danger" : "muted"),
+          makeBadge(
+            `ignore zones ${text(camera.ignore_zones_enabled, "0")}/${text(camera.ignore_zones_count, "0")}`,
+            camera.ignore_zones_enabled ? "warn" : "muted"
+          )
         );
 
         const freshness = document.createElement("div");

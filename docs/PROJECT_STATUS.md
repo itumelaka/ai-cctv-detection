@@ -78,7 +78,10 @@ Current AI and dashboard features:
 - PERSON_CONFIDENCE_THRESHOLD default is 0.60.
 - makmal_cam_13 uses `person_confidence_threshold: 0.75` due to a fixed tree/topiary false positive around 0.62-0.63.
 - kuarantin_cam_11 uses `person_confidence_threshold: 0.75` due to a fixed blue pipe false positive around 0.65.
-- Future improvement: ignore-zone / polygon mask support for fixed objects instead of relying only on threshold increases.
+- Ignore-zone / polygon mask support is implemented for fixed objects instead of relying only on threshold increases.
+- Placeholder zones for makmal_cam_13 and kuarantin_cam_11 are disabled by default and must be calibrated from reviewed frames before enabling.
+- Enabled ignore zones suppress detections whose bounding-box center falls inside the polygon before alert/evidence creation.
+- Event review metadata is available through `/events/reviews/{event_id}` and is stored as ignored local runtime data under `backend/data/event-reviews/`.
 - Telegram person alerts include confidence and threshold when available.
 - Evidence image now uses clearer composite: full CCTV frame with bounding boxes plus zoomed crop of highest-confidence person.
 - High-resolution evidence is attempted after person detection. If a high-resolution frame is captured, person detection runs again on that frame and high-resolution boxes are used. If capture or re-detection fails, the system falls back to the original detection frame and boxes.

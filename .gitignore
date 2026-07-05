@@ -38,3 +38,6 @@ backend/data/face-reference/
 
 # Scheduled task logs
 backend/data/task-logs/
+
+# Local event review decisions
+backend/data/event-reviews/

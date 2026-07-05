@@ -99,7 +99,35 @@
     "channel": "102",
     "person_confidence_threshold": 0.75,
     "enabled": true,
-    "notes": "Confirmed VLC RTSP stream label: KUARANTIN. Direct IP camera. Sub-stream channel 102. Person threshold raised to 0.75 because a fixed blue pipe caused false positives around 0.65."
+    "notes": "Confirmed VLC RTSP stream label: KUARANTIN. Direct IP camera. Sub-stream channel 102. Person threshold raised to 0.75 because a fixed blue pipe caused false positives around 0.65.",
+    "ignore_zones": [
+      {
+        "id": "blue_pipe_candidate_zone",
+        "label": "Blue pipe candidate zone",
+        "type": "polygon",
+        "enabled": false,
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.12,
+            0
+          ],
+          [
+            0.12,
+            0.25
+          ],
+          [
+            0,
+            0.25
+          ]
+        ],
+        "reason": "known_static_false_positive_blue_pipe",
+        "notes": "Approximate placeholder only. Adjust normalized polygon points from reviewed frames before enabling."
+      }
+    ]
   },
   {
     "id": "biosekuriti_cam_12",
@@ -118,6 +146,34 @@
     "channel": "102",
     "person_confidence_threshold": 0.75,
     "enabled": true,
-    "notes": "Confirmed VLC RTSP stream label: MAKMAL. Direct IP camera. Sub-stream channel 102. Person threshold raised to 0.75 because static topiary/tree caused false positives around 0.62-0.63."
+    "notes": "Confirmed VLC RTSP stream label: MAKMAL. Direct IP camera. Sub-stream channel 102. Person threshold raised to 0.75 because static topiary/tree caused false positives around 0.62-0.63.",
+    "ignore_zones": [
+      {
+        "id": "topiary_candidate_zone",
+        "label": "Tree/topiary candidate zone",
+        "type": "polygon",
+        "enabled": false,
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            0.12,
+            0
+          ],
+          [
+            0.12,
+            0.25
+          ],
+          [
+            0,
+            0.25
+          ]
+        ],
+        "reason": "known_static_false_positive_tree_topiary",
+        "notes": "Approximate placeholder only. Adjust normalized polygon points from reviewed frames before enabling."
+      }
+    ]
   }
 ]

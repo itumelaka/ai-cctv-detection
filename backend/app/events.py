@@ -9,6 +9,7 @@ from app.detection import (
     run_person_snapshot_jpeg_for_camera,
 )
 from app.event_log import append_event_log, read_latest_event_logs, read_all_event_logs, save_evidence_image
+from app.event_reviews import with_review
 
 
 def _get_camera_id(camera_context: dict | None = None) -> str:
@@ -237,7 +238,10 @@ def add_evidence_urls(events: list[dict]) -> list[dict]:
 
 def get_latest_dashboard_events(limit: int = 10) -> dict:
     latest_events = get_latest_events(limit=limit)
-    events = add_evidence_urls(latest_events.get("events", []))
+    events = [
+        with_review(event)
+        for event in add_evidence_urls(latest_events.get("events", []))
+    ]
 
     return {
         "status": "ok",
@@ -259,7 +263,10 @@ def get_latest_dashboard_event_for_camera(camera_id: str) -> dict:
     ]
 
     latest_event = events[-1] if events else None
-    dashboard_events = add_evidence_urls([latest_event]) if latest_event else []
+    dashboard_events = (
+        [with_review(event) for event in add_evidence_urls([latest_event])]
+        if latest_event else []
+    )
 
     return {
         "status": "ok",

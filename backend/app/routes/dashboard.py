@@ -126,7 +126,12 @@ def dashboard_cameras():
                 "channel": camera.get("channel"),
                 "enabled": camera.get("enabled", True),
                 "notes": camera.get("notes"),
-                "status": camera.get("status")
+                "status": camera.get("status"),
+                "ignore_zones_count": len(camera.get("ignore_zones", [])),
+                "ignore_zones_enabled": len([
+                    zone for zone in camera.get("ignore_zones", [])
+                    if zone.get("enabled")
+                ])
             }
             for camera in cameras
         ]
