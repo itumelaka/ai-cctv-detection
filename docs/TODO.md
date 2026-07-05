@@ -5,22 +5,23 @@
 - Production backend path: C:\ituaicctv
 - Production dashboard: http://192.168.1.254:8000/dashboard-ui
 - Backend service ITUAICCTVBackend is Running and Automatic.
-- Task Scheduler task ITU AI CCTV Person Monitor is Ready.
-- Scheduler uses C:\ituaicctv\.venv312\Scripts\python.exe.
-- Camera registry now has 12 enabled cameras; latest confirmed scheduler logs before adding the newly labelled cameras show status ok and failed 0.
+- Primary task ITU AI CCTV Live Monitor is Running as a long-running startup-triggered Task Scheduler task.
+- Old 5-minute task ITU AI CCTV Person Monitor is Disabled and retained as backup.
+- Live monitor uses C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py.
+- Camera registry has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera.
 - Exit code 0 = ok/no attention. Exit code 2 = attention/person detected, not a crash.
 - Evidence is saved only when person_detected=True.
 - New evidence image behavior: full-frame boxes plus zoom crop of highest-confidence person.
 - Evidence crop labels avoid implying face identity quality; low-resolution crops can be marked FACE ID NOT SUITABLE.
 - Face readiness metadata is advisory only and does not perform identity recognition or store face embeddings.
-- Optional internal staff/student recognition foundation is disabled by default and supports `face_recognition` or OpenCV LBPH backends after approved local enrollment.
+- Internal staff/student recognition foundation is disabled by default in code and supports `face_recognition` or OpenCV LBPH backends after approved local enrollment. Production currently enables OpenCV LBPH for enrolled test label BURN.
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
 - Fullscreen TV Command Center mode is available at /dashboard-tv.
 - TV mode includes a selectable backend-proxied MJPEG live camera panel; latest evidence is shown separately as historical proof.
 - Direct stream endpoint /dashboard/live/{camera_id}/stream.mjpg is available for one selected camera/viewer at 4 FPS; /dashboard/live/{camera_id}/snapshot.jpg remains as fallback.
-- Optional near-live monitor script is available at scripts/monitor_person_live.py.
-- Near-live monitor default scan interval is 10 seconds with a 300-second per-camera alert cooldown.
-- Existing 5-minute Task Scheduler scan remains as backup until near-live monitoring is proven stable.
+- Near-live monitor script scripts/monitor_person_live.py is the primary alerting path on production.
+- Configured live monitor scan interval is 10 seconds; observed full-cycle time is about 30 seconds across 12 enabled cameras.
+- Existing 5-minute Task Scheduler scan is Disabled and remains as backup.
 
 ## Current Production Backlog
 
@@ -41,7 +42,7 @@
 - [ ] Add after-hours detection.
 - [x] Add fullscreen command center / TV mode.
 - [x] Add optional near-live continuous person monitor script.
-- [ ] Pilot near-live monitor on production as optional ITUAICCTVLiveMonitor service.
+- [x] Activate near-live monitor on production as primary long-running startup-triggered Task Scheduler task.
 - [ ] Watch CPU/network/camera load before reducing live monitor interval below 10 seconds.
 - [ ] Continue face detection and safe opt-in face recognition roadmap.
 - [x] Try high-resolution main-stream evidence capture after person_detected=True, with fallback to detection frame.
@@ -50,13 +51,17 @@
 - [x] Add explicit face evidence quality/readiness metadata before any recognition pilot.
 - [x] Add disabled-by-default internal face recognition foundation and enrollment script scaffold.
 - [x] Add OpenCV LBPH backend option for local internal recognition when opencv-contrib-python is installed.
-- [ ] Confirm kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 in the next scheduler/dashboard health run.
+- [x] Confirm kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 in inventory with VLC labels.
 
 ## Production Verification Commands
 
 ```powershell
 Get-Service ITUAICCTVBackend | Select-Object Name, Status, StartType
-Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
+Get-ScheduledTask |
+  Where-Object { $_.TaskName -like "ITU AI CCTV*" } |
+  Select-Object TaskName, State
+Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Live Monitor" |
+  Select-Object LastRunTime, LastTaskResult
 Invoke-RestMethod http://127.0.0.1:8000/dashboard/health | ConvertTo-Json -Depth 6
 ```
 
@@ -73,8 +78,8 @@ Checkpoint notes:
 - Use 127.0.0.1 dashboard URLs only on the machine running the backend.
 - GitHub Pages is no longer the primary production dashboard.
 - Backend service listens on 0.0.0.0:8000 and is reachable from LAN / Teleport.
-- Scheduler task ITU AI CCTV Person Monitor is Ready.
-- Latest successful check-all run: enabled=9, person=0, no_person=9, failed=0, exit code 0.
+- ITU AI CCTV Live Monitor is Running; LastTaskResult 267009 / 0x41301 means the long-running task is currently running.
+- ITU AI CCTV Person Monitor is Disabled and retained as a backup task.
 - Current camera registry after confirmed VLC labels: total=13, enabled=12, disabled/offline=1.
 - Evidence share: \\192.168.1.254\ituaicctv-evidence.
 - Evidence images are saved only for person_detected=True; no_person events usually have no evidence image.
@@ -162,8 +167,9 @@ Camera list:
 - [ ] Add privacy and consent notes
 - [ ] Design face enrolment flow
 - [x] Add local enrollment script scaffold for approved internal labels
-- [ ] Install/approve local face embedding dependency before real enrollment, for example opencv-contrib-python for LBPH or another approved local backend
-- [ ] Verify production LBPH support with `C:\ituaicctv\.venv312\Scripts\python.exe -c "import cv2; print(hasattr(cv2, 'face'))"`
+- [x] Install/approve local face embedding dependency for LBPH: opencv-contrib-python 5.0.0.93 on production
+- [x] Verify production LBPH support with `C:\ituaicctv\.venv312\Scripts\python.exe -c "import cv2; print(hasattr(cv2, 'face'))"`
+- [x] Enroll test internal label BURN with OpenCV LBPH using private local photos
 - [ ] Add face recognition pilot only for authorised internal staff/student
 - [ ] Add known persons database only as private local biometric data, never in Git
 - [ ] Add confidence threshold for identity matching

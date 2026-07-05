@@ -9,8 +9,10 @@ FastAPI backend for CCTV RTSP testing, snapshot capture, YOLO detection, person-
 - Production dashboard: `http://192.168.1.254:8000/dashboard-ui`
 - TV command center: `http://192.168.1.254:8000/dashboard-tv`
 - Backend service: `ITUAICCTVBackend`, confirmed `Running`, `Automatic`
-- Scheduler task: `ITU AI CCTV Person Monitor`, confirmed `Ready`
-- Scheduler Python: `C:\ituaicctv\.venv312\Scripts\python.exe`
+- Primary monitor task: `ITU AI CCTV Live Monitor`, confirmed `Running`
+- Old batch monitor task: `ITU AI CCTV Person Monitor`, confirmed `Disabled` and retained as backup
+- Live monitor command: `C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py`
+- Live monitor scans enabled cameras sequentially. Configured interval is 10 seconds, with real observed full-cycle time around 30 seconds for 12 enabled cameras.
 - Total known cameras: 13
 - Enabled cameras: 12
 - Disabled/offline camera: `block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20`
@@ -20,7 +22,9 @@ Verify after server restart:
 
 ```powershell
 Get-Service ITUAICCTVBackend | Select-Object Name, Status, StartType
-Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
+Get-ScheduledTask |
+  Where-Object { $_.TaskName -like "ITU AI CCTV*" } |
+  Select-Object TaskName, State
 Invoke-RestMethod http://127.0.0.1:8000/dashboard/health | ConvertTo-Json -Depth 6
 ```
 
@@ -40,6 +44,14 @@ For new detections, the evidence image is a clearer composite:
 - fallback to boxed full-frame evidence if composite generation fails
 
 Telegram sends the saved evidence image, so new alerts use the clearer composite image automatically.
+
+Face readiness and internal recognition status:
+
+- Face readiness / face quality assessment is implemented and conservative. It is not identity recognition by itself.
+- OpenCV LBPH is available on production through `opencv-contrib-python 5.0.0.93`; `cv2.face` and `LBPHFaceRecognizer_create` are available.
+- Production currently enables `FACE_RECOGNITION_ENABLED=true` and `FACE_RECOGNITION_BACKEND=opencv_lbph` in private `.env`.
+- Test internal label `BURN` is enrolled using three private local samples. Generated LBPH model/label files live under the ignored `backend/data/face-embeddings/` directory and must never be committed.
+- `UNKNOWN` means no reliable internal match and does not mean suspicious.
 
 ## Scheduler Exit Codes
 

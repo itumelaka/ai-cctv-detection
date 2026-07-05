@@ -9,7 +9,8 @@ Dokumen ini menerangkan garis panduan keselamatan untuk projek **Hikvision AI CC
 - TV command center dashboard: `http://192.168.1.254:8000/dashboard-tv`
 - GitHub Pages is no longer the primary production dashboard.
 - Backend service `ITUAICCTVBackend` is confirmed `Running` and `Automatic`.
-- Task Scheduler task `ITU AI CCTV Person Monitor` is confirmed `Ready`.
+- Primary task `ITU AI CCTV Live Monitor` is confirmed `Running`.
+- Old 5-minute task `ITU AI CCTV Person Monitor` is `Disabled` and retained as backup.
 - Windows Firewall allows inbound TCP `8000` for dashboard/API access.
 - UDM Pro allows server `192.168.1.254` to CCTV subnet `192.168.40.0/24` on TCP `554`.
 - Current camera inventory has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera: `block_f_cam_8 / 192.168.40.20`.
@@ -45,6 +46,7 @@ Jangan simpan maklumat berikut dalam GitHub atau mana-mana repository awam:
 - IP dalaman sensitif jika repo dijadikan public.
 - Log runtime, gambar evidence CCTV, folder virtualenv, atau nota handoff local.
 - Face images, face embeddings, or personal identity data.
+- Real staff/student enrollment CSVs, local source face-photo paths, OpenCV LBPH model files, or generated label maps.
 
 Gunakan fail `.env` atau config local yang dimasukkan dalam `.gitignore`.
 
@@ -149,6 +151,8 @@ An optional internal staff/student recognition foundation exists but is disabled
 Face reference images and embeddings are biometric data. Keep `backend/data/face-reference/` and `backend/data/face-embeddings/` private on the production server, never expose them through dashboard routes or shares, and never commit them to Git. Any recognition phase must include clear authorization or consent, access control, audit logs, retention/deletion rules, and private local storage on the production server.
 
 OpenCV LBPH is a lightweight local baseline when `opencv-contrib-python` is installed. It is not high-security identity proof and must not be used as the sole basis for disciplinary or enforcement action. Camera distance, lighting, angle, and face size can produce wrong or unknown results.
+
+Current production has OpenCV LBPH available and a test internal label `BURN` enrolled. This does not change the privacy boundary: recognition is internal-only, approved-use only, and `UNKNOWN` means no reliable internal match, not suspicious behavior. Hikvision/NVR recording remains separate from AI evidence, face enrollment data, and AI model/embedding files.
 
 ## Responsible Use
 

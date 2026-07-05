@@ -37,19 +37,23 @@ STATUS PRODUCTION TERKINI:
 - Service status: Running
 - Service StartType: Automatic
 - Backend/API/dashboard patut auto-start selepas Windows Server reboot.
-- Task Scheduler: ITU AI CCTV Person Monitor, status Ready.
-- Script task: backend/scripts/run_monitor_person_all_once.bat
-- Hidden launcher: backend/scripts/run_monitor_person_all_once_hidden.vbs
-- Log task: C:\ituaicctv\backend\data\task-logs\monitor_person_all.log
+- Primary Task Scheduler: ITU AI CCTV Live Monitor, status Running.
+- Old 5-minute task: ITU AI CCTV Person Monitor, status Disabled dan kekal sebagai backup.
+- Live monitor command:
+  C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py
+- Live monitor scan enabled cameras sequentially.
+- Configured interval: 10 seconds between full scan cycles.
+- Observed cycle: around 30 seconds sebab scan 12 cameras ambil masa.
 - Python task: C:\ituaicctv\.venv312\Scripts\python.exe
 - Camera registry sekarang ada 12 enabled cameras.
-- Latest log: status ok, enabled=9, failed=0.
 - Exit code 0 = ok / no attention / no person detected.
 - Exit code 2 = attention required / person detected, bukan crash.
 - Evidence hanya disimpan bila person_detected=True. Event no_person
   biasanya evidence_path=null dan tiada gambar evidence.
 - Evidence baru guna composite lebih jelas:
   full CCTV frame dengan bounding box + zoom crop person confidence tertinggi.
+- High-res evidence cuba guna main/high stream bila available dan run detection semula pada frame high-res. Sistem tidak lagi scale low-res boxes secara buta ke high-res frame.
+- Jika high-res capture atau high-res re-detection gagal, fallback ke original detection frame dan original boxes.
 - Filename evidence kekal:
   person_detected_<camera_id>_<timestamp>.jpg
 - Jika composite gagal, fallback ialah full-frame dengan bounding box.
@@ -76,7 +80,37 @@ STATUS PRODUCTION TERKINI:
 - Existing enabled cameras active based on recent health checks; newly labelled
   cameras perlu verify selepas scheduler/dashboard health run seterusnya.
 - PERSON_CONFIDENCE_THRESHOLD default: 0.60
+- makmal_cam_13 threshold: 0.75 sebab tree/topiary false positive sekitar 0.62-0.63.
+- kuarantin_cam_11 threshold: 0.75 sebab fixed blue pipe false positive sekitar 0.65.
+- Future: ignore-zone / polygon mask untuk fixed object false positive.
 - Telegram alert include confidence dan threshold jika available.
+- Face readiness sudah implemented. Ia bukan identity recognition sendiri. Label boleh jadi FACE NOT SUITABLE / POSSIBLE / SUITABLE / UNAVAILABLE dan conservative by design.
+- Internal face recognition foundation privacy-gated. Code default FACE_RECOGNITION_ENABLED=false, tetapi production backend\.env sekarang enable:
+  FACE_RECOGNITION_ENABLED=true
+  FACE_RECOGNITION_BACKEND=opencv_lbph
+- OpenCV LBPH production ready:
+  opencv-contrib-python 5.0.0.93
+  numpy 2.4.6
+  cv2.face exists: True
+  LBPHFaceRecognizer_create: True
+- Haar cascade manually added:
+  C:\ituaicctv\.venv312\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml
+  Confirmed length: 930127 bytes
+- Test internal label BURN enrolled using 3 LBPH samples.
+- Private model files:
+  backend/data/face-embeddings/opencv_lbph_model.yml
+  backend/data/face-embeddings/opencv_lbph_labels.json
+  These are generated private files and must not be committed.
+- Jangan commit real face photos, enrollment CSVs, embeddings, atau model files.
+- UNKNOWN bukan suspicious; maksudnya tiada reliable internal match.
+- Private local source examples, jangan hardcode dalam application code:
+  Staff 2024:
+  H:\ITUNAS\~StartHere~\Pictures\2024\gambar staff 2024 januari\New folder
+  Student A2 2025:
+  H:\ITUNAS\~StartHere~\Pictures\2025\A2 GAMBAR
+- Future enrollment patut guna private CSV mapping:
+  label,group,role,image_path
+- Jangan rename/alter original source folders. Future intake folders boleh tambah kemudian.
 - Dashboard /dashboard-ui sekarang dark AI Command Center dengan LIVE AI
   MONITORING, scan line, summary cards, AI Status / Health, latest AI event,
   event timeline, evidence gallery, camera grid, section scroll navigation,
@@ -96,12 +130,19 @@ STATUS PRODUCTION TERKINI:
 
 SEMAK SELEPAS SERVER RESTART:
   Get-Service ITUAICCTVBackend | Select-Object Name, Status, StartType
-  Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
-  Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Person Monitor"
+  Get-ScheduledTask |
+    Where-Object { $_.TaskName -like "ITU AI CCTV*" } |
+    Select-Object TaskName, State
+  Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Live Monitor" |
+    Select-Object LastRunTime, LastTaskResult
   Invoke-RestMethod http://127.0.0.1:8000/dashboard/health | ConvertTo-Json -Depth 8
-  Start-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
-  Start-Sleep -Seconds 120
-  Get-Content C:\ituaicctv\backend\data\task-logs\monitor_person_all.log -Tail 220
+  Invoke-RestMethod http://127.0.0.1:8000/detections/block_f_cam_6/person |
+    ConvertTo-Json -Depth 10
+  Get-Content C:\ituaicctv\backend\.env |
+    Select-String "FACE_RECOGNITION"
+  C:\ituaicctv\.venv312\Scripts\python.exe -c "import cv2; print('cv2', cv2.__version__); print('cv2.face exists:', hasattr(cv2, 'face')); print('LBPH:', hasattr(cv2.face, 'LBPHFaceRecognizer_create') if hasattr(cv2, 'face') else False)"
+  Get-ChildItem C:\ituaicctv\backend\data\face-embeddings |
+    Select-Object Name, Length, LastWriteTime
   Get-ChildItem C:\ituaicctv\backend\data\evidence |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 10 Name, LastWriteTime, Length

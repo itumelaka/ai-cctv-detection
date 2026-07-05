@@ -14,9 +14,9 @@ Production is now running from `C:\ituaicctv` on the Windows Server with backend
 Operational foundation:
 
 - Backend service `ITUAICCTVBackend` is Running and Automatic.
-- Scheduler task `ITU AI CCTV Person Monitor` is Ready.
+- Primary alerting task `ITU AI CCTV Live Monitor` is Running as a startup-triggered long-running Windows Task Scheduler task.
+- Old 5-minute scheduler task `ITU AI CCTV Person Monitor` is Disabled and retained only as backup.
 - Camera registry has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera.
-- Latest confirmed scheduler logs before adding the newly labelled cameras show status ok, enabled=9, failed=0.
 - One camera remains disabled/offline: `block_f_cam_8 / ITU BLOCK F CAM8`.
 - Newly confirmed enabled cameras: `kuarantin_cam_11` / `192.168.40.23`, `biosekuriti_cam_12` / `192.168.40.24`, and `makmal_cam_13` / `192.168.40.25`.
 - Evidence is saved only for `person_detected=True`.
@@ -24,12 +24,11 @@ Operational foundation:
 - The person crop is review evidence only. Low-resolution sub-stream crops are not suitable proof for face identity recognition.
 - Face readiness metadata is now advisory groundwork only: local face detection availability, face count, best face box, quality, readiness, and reasons. It does not identify people.
 - Optional internal staff/student recognition foundation is config-controlled and disabled by default. It supports local backend selection with `auto`, `face_recognition`, and OpenCV LBPH when `opencv-contrib-python` provides `cv2.face`.
+- Production currently has OpenCV LBPH available and a test internal label `BURN` enrolled. This remains approved internal-use only and is not high-security identity proof.
 - Fullscreen TV Command Center mode is available at `/dashboard-tv`.
 - TV mode now separates a selectable backend-proxied MJPEG live camera view from historical evidence snapshots.
 - Direct selected-camera stream endpoint is available at `/dashboard/live/{camera_id}/stream.mjpg` with a 4 FPS limit; `/dashboard/live/{camera_id}/snapshot.jpg` remains as fallback.
-- Optional near-live monitor script is available at `scripts/monitor_person_live.py`.
-- Near-live monitoring runs repeated sequential scan cycles every 10 seconds by default with a 300-second per-camera alert cooldown.
-- The existing 5-minute Windows Task Scheduler scan should remain as backup until the near-live monitor is proven stable.
+- Near-live monitoring runs repeated sequential scan cycles. Configured interval is 10 seconds, but real full-cycle time is about 30 seconds because 12 enabled cameras are scanned sequentially.
 
 ## Forward Backlog
 
@@ -45,9 +44,11 @@ Operational foundation:
 10. After-hours detection.
 11. Improve fullscreen command center / TV mode after real TV review.
 12. WebRTC/HLS/media-server upgrade for better live-view scaling if multiple viewers or cameras need streaming.
-13. Pilot the near-live monitor as an optional `ITUAICCTVLiveMonitor` Windows service after observing CPU, network, and camera load.
+13. Harden the live monitor operation with clearer status reporting, overlap protection, and CPU/network observation before lowering scan intervals.
 14. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
 15. Optional Telegram send-as-document evidence delivery to reduce Telegram photo compression.
+16. CSV-based private face enrollment mapping for staff/student sources, without hardcoding source folders in application code.
+17. Ignore-zone / polygon mask support for fixed false-positive objects such as tree/topiary and blue pipe.
 
 ## Current Checkpoint
 
@@ -61,7 +62,7 @@ Checkpoint summary:
 - Production dashboard is http://192.168.1.254:8000/dashboard-ui for LAN / Teleport access.
 - GitHub Pages is no longer the primary production dashboard; daily operation uses the Windows Server backend dashboard.
 - Backend service listens on 0.0.0.0:8000 with Windows Firewall inbound rule ITU AI CCTV Backend Port 8000.
-- Person Monitor scheduled task is Ready and has completed a successful check-all run with enabled=9, person=0, no_person=9, failed=0, exit code 0.
+- Primary `ITU AI CCTV Live Monitor` task is Running. The old 5-minute `ITU AI CCTV Person Monitor` task is Disabled and retained as backup.
 - Evidence share is available at \\192.168.1.254\ituaicctv-evidence, mapped to C:\ituaicctv\backend\data\evidence.
 - Evidence images are saved only when person_detected=True; no_person events usually do not have evidence images.
 
@@ -536,14 +537,14 @@ Python selection order:
 
 This supports laptop environments where the old .venv is missing or broken but .venv312 exists.
 
-Current expected healthy dashboard state after a successful scheduler run:
+Current expected healthy dashboard state:
 
 - total cameras: 13
 - enabled: 12
 - disabled/offline: 1
-- active: 12 after the newly labelled cameras are confirmed by health checks
-- stale: 0
-- latest confirmed scheduler summary before adding the newly labelled cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- active/stale counts depend on latest live monitor events and the configured stale threshold
+- live monitor task: ITU AI CCTV Live Monitor Running
+- old batch task: ITU AI CCTV Person Monitor Disabled
 
 Next operational decisions:
 

@@ -1,27 +1,30 @@
 # ITU AI CCTV - Windows Task Scheduler
 
-Last updated: 2026-07-04
+Last updated: 2026-07-05
 
 ## Current Scheduler Status
 
-Task name:
+Primary task:
 
-ITU AI CCTV Person Monitor
+ITU AI CCTV Live Monitor
 
 Current state:
 
-- Registered on the Windows Server on 2026-07-03 via scripts/server/setup_task_scheduler.ps1
-- Confirmed Ready on the production Windows Server
-- Current production state confirmed Ready
-- Uses the multi-camera hidden VBS launcher
-- Checks enabled cameras from backend/config/cameras.json
-- BAT launcher returns 0 to Task Scheduler so person detection or camera check results do not appear as Task Scheduler failures
-- BAT launcher resolves the project root dynamically from the script location
-- Python selection order:
-  1. .venv312\Scripts\python.exe
-  2. .venv\Scripts\python.exe
-  3. python from PATH
-- This fixes laptop environments where old .venv is missing or broken but .venv312 exists
+- Confirmed Running on production.
+- Runs as a long-running Windows Task Scheduler task triggered at startup.
+- Command: C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py
+- Scans enabled cameras sequentially.
+- Configured interval is 10 seconds between full scan cycles.
+- Real observed cycle time is about 30 seconds because scanning 12 cameras takes time.
+- Replaces the old 5-minute batch monitor as the primary alerting path.
+- Reuses existing person detection, evidence save, event, cooldown, and Telegram alert flow.
+- Suppresses routine no_person event writes to avoid excessive event-log noise.
+
+Backup task:
+
+- ITU AI CCTV Person Monitor is Disabled.
+- It is not deleted and can be re-enabled as backup if needed.
+- It uses the older check-all batch monitor path.
 
 Production server path:
 
@@ -31,30 +34,35 @@ Production scheduler Python:
 
 C:\ituaicctv\.venv312\Scripts\python.exe
 
-Latest confirmed successful server check-all run:
+Current camera registry:
 
-- Enabled cameras: 9
-- Failed: 0
-- Latest logs show status ok
-- Current camera registry now has 12 enabled cameras after the newly labelled cameras were added.
-- Exit code 0 means no person detected / no action
-- Exit code 2 means attention required / person detected, not a crash
-- YOLOv8n downloaded successfully on the server during the first successful run
+- Total known cameras: 13
+- Enabled cameras: 12
+- Disabled/offline cameras: 1
+- Disabled/offline camera: block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20
+- 192.168.40.26 is not part of current inventory.
+- Exit code 0 means no person detected / no action.
+- Exit code 2 means attention required / person detected, not a crash.
+- LastTaskResult 267009 / 0x41301 means a long-running task is currently running.
 
 ## Reboot Behavior
 
 - Backend service `ITUAICCTVBackend` is confirmed `Running`.
 - Service `StartType` is confirmed `Automatic`.
 - Backend/API/dashboard should auto-start after Windows Server reboot.
-- Task `ITU AI CCTV Person Monitor` is confirmed `Ready`.
-- Scheduler should continue using `C:\ituaicctv\.venv312\Scripts\python.exe`.
+- Task `ITU AI CCTV Live Monitor` should be `Running`.
+- Task `ITU AI CCTV Person Monitor` should be `Disabled`.
+- Live monitor should continue using `C:\ituaicctv\.venv312\Scripts\python.exe`.
 
 Verify after restart:
 
 ```powershell
 Get-Service ITUAICCTVBackend | Select-Object Name, Status, StartType
-Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
-Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Person Monitor"
+Get-ScheduledTask |
+  Where-Object { $_.TaskName -like "ITU AI CCTV*" } |
+  Select-Object TaskName, State
+Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Live Monitor" |
+  Select-Object LastRunTime, LastTaskResult
 Invoke-RestMethod http://127.0.0.1:8000/dashboard/health | ConvertTo-Json -Depth 8
 ```
 
@@ -100,15 +108,15 @@ Current camera summary:
 - Disabled camera: block_f_cam_8 / 192.168.40.20
 - Reason: ping and RTSP port 554 are not reachable
 
-## Optional Near-Live Monitor
+## Primary Near-Live Monitor
 
-The 5-minute Windows Task Scheduler job remains in place and can stay as a backup. For near-live alerting, the project also includes an optional long-running monitor:
+Near-live alerting now uses the long-running monitor:
 
 ```text
 scripts/monitor_person_live.py
 ```
 
-Manual production run command:
+Manual production run command for troubleshooting:
 
 ```powershell
 C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py
@@ -116,18 +124,19 @@ C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_liv
 
 Default behavior:
 
-- Scans all enabled cameras sequentially every 10 seconds.
+- Scans all enabled cameras sequentially.
 - Uses `LIVE_MONITOR_INTERVAL_SECONDS` when set; default is 10.
+- Observed full-cycle time is about 30 seconds because scanning 12 enabled cameras takes time.
 - Uses `LIVE_MONITOR_ALERT_COOLDOWN_SECONDS` when set; default is 300.
 - Reuses the existing person detection, evidence save, event, cooldown, and Telegram alert flow.
 - Suppresses routine no_person event writes to avoid excessive event-log noise.
 - Continues running when a single camera fails and prints compact cycle summaries.
 - Stops cleanly with Ctrl+C and exit code 0.
 
-Production service plan:
+Current production task plan:
 
-- Optional future NSSM service name: ITUAICCTVLiveMonitor
-- Keep the existing Task Scheduler job until the live monitor is proven stable.
+- Current Task Scheduler task name: ITU AI CCTV Live Monitor
+- Keep the existing disabled `ITU AI CCTV Person Monitor` task as a backup path.
 - Watch CPU, network, and camera load before reducing the interval to 5 seconds.
 - MJPEG TV live stream is for viewing only and does not trigger AI detection.
 
@@ -172,16 +181,16 @@ GET /dashboard/health also combines scheduler status with event-log based camera
 
 The default stale threshold is 120 minutes. Stale health is based on existing event/check timestamps from backend/data/events.jsonl.
 
-Current expected healthy dashboard state after a successful scheduler run:
+Current expected healthy dashboard state:
 
 - Dashboard UI: http://192.168.1.254:8000/dashboard-ui
 - Health endpoint: http://192.168.1.254:8000/dashboard/health
 - total cameras: 13
 - enabled: 12
 - disabled/offline: 1
-- active: 12 after the newly labelled cameras are confirmed by health checks
-- stale: 0
-- latest scheduler summary: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- active/stale counts depend on latest live monitor events and the configured stale threshold
+- live monitor task: ITU AI CCTV Live Monitor Running
+- old batch task: ITU AI CCTV Person Monitor Disabled
 
 Use 127.0.0.1 only when browsing on the server itself.
 

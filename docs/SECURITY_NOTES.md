@@ -6,7 +6,8 @@
 - Production dashboard: http://192.168.1.254:8000/dashboard-ui
 - TV command center dashboard: http://192.168.1.254:8000/dashboard-tv
 - Backend service ITUAICCTVBackend is Running and Automatic.
-- Task Scheduler task ITU AI CCTV Person Monitor is Ready.
+- Primary live monitor task ITU AI CCTV Live Monitor is Running.
+- Old 5-minute ITU AI CCTV Person Monitor task is Disabled and retained as backup.
 - Backend listens on port 8000.
 - Windows Firewall allows inbound TCP 8000 for dashboard/API.
 - UDM Pro allows server 192.168.1.254 to CCTV subnet 192.168.40.0/24 on TCP 554.
@@ -43,6 +44,9 @@ Do not commit:
 - Runtime logs under backend/data/task-logs/
 - Runtime service logs under backend/data/service-logs/
 - Evidence images under backend/data/evidence/
+- Face enrollment photos under backend/data/face-enrollment/
+- Face reference images under backend/data/face-reference/
+- Face embeddings or LBPH model files under backend/data/face-embeddings/
 - Local handoff notes
 - Any screenshot showing CCTV credentials
 - RTSP URLs that contain a username or password
@@ -146,6 +150,7 @@ Rules:
 - Current face readiness metadata is advisory only. It may report face detection availability, face count, a best face box, quality, readiness, and quality reasons, but it must not identify anyone.
 - Optional face recognition is internal staff/student only, config-controlled, and disabled by default. Do not enable it unless authorization, consent/policy, access control, audit logs, and retention/deletion rules are ready.
 - OpenCV LBPH requires `opencv-contrib-python` and is a lightweight local baseline, not high-security identity proof.
+- Production currently has OpenCV LBPH available and a test internal label BURN enrolled from private local photos.
 - Use face recognition only with clear authorization, consent, or written policy.
 - Do not store random unknown face identities by default.
 - Do not expose any face database, crop folder, embedding store, or identity mapping publicly.
@@ -154,6 +159,8 @@ Rules:
 - Telegram alerts should avoid unnecessary personal data. Prefer a generic review alert unless policy explicitly allows names.
 - `UNKNOWN` means no reliable enrolled internal match. It must not be treated as suspicious by itself.
 - Keep Hikvision/NVR recording separate from AI evidence, face references, and face embeddings.
+- Do not commit real enrollment CSVs with staff/student names or local photo paths.
+- Private local source examples include staff 2024 photos under `H:\ITUNAS\~StartHere~\Pictures\2024\gambar staff 2024 januari\New folder` and student A2 2025 photos under `H:\ITUNAS\~StartHere~\Pictures\2025\A2 GAMBAR`. Do not hardcode those paths in application code.
 
 Proposed future private folders:
 

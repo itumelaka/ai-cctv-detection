@@ -32,15 +32,14 @@ Production server status:
 - Service status: Running
 - Service StartType: Automatic
 - Backend listens on port 8000 and should auto-start after Windows Server reboot.
-- Task Scheduler task: ITU AI CCTV Person Monitor
-- Task state: Ready
-- Scheduler Python: C:\ituaicctv\.venv312\Scripts\python.exe
-- Camera registry now has 12 enabled cameras. Latest confirmed scheduler logs before adding the newly labelled cameras show status ok, enabled=9, failed=0.
-- Optional near-live monitor script: scripts/monitor_person_live.py
-- Near-live monitor defaults: scan cycle every 10 seconds, per-camera alert cooldown 300 seconds.
-- Existing 5-minute Task Scheduler scan remains available as a backup until near-live monitoring is proven stable.
+- Primary monitor task: ITU AI CCTV Live Monitor
+- Live monitor state: Running
+- Live monitor command: C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py
+- Live monitor runs as a long-running Windows Task Scheduler task triggered at startup.
+- Live monitor scans enabled cameras sequentially. Configured interval is 10 seconds between full scan cycles; observed full-cycle time is about 30 seconds because scanning 12 cameras takes time.
+- Old 5-minute batch monitor task `ITU AI CCTV Person Monitor` is Disabled. It remains registered as a backup path but is not the primary alerting mode.
 - Person evidence includes advisory face readiness metadata when local OpenCV face detection is available. This does not identify people.
-- Optional internal staff/student face recognition foundation is present but disabled by default with `FACE_RECOGNITION_ENABLED=false`.
+- Internal staff/student face recognition foundation is privacy-gated. It is disabled by default in code, but production currently enables OpenCV LBPH recognition for approved test label `BURN`.
 
 Camera and network status:
 
@@ -48,7 +47,8 @@ Camera and network status:
 - Enabled cameras: 12
 - Disabled/offline cameras: 1
 - Disabled/offline: block_f_cam_8 / ITU BLOCK F CAM8 / 192.168.40.20, because ping and RTSP port 554 are not reachable.
-- Previously confirmed enabled cameras were active based on recent health checks; kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 should be verified after the next scheduler or dashboard health run.
+- Confirmed additional cameras: kuarantin_cam_11 / ITU KUARANTIN CAM11 / 192.168.40.23, biosekuriti_cam_12 / ITU BIOSEKURITI CAM12 / 192.168.40.24, and makmal_cam_13 / ITU MAKMAL CAM13 / 192.168.40.25.
+- 192.168.40.26 is not part of the current inventory and was only a mistaken/stale entry.
 - Production server LAN IP: 192.168.1.254
 - Server source interface to CCTV subnet: Ethernet 2 / 192.168.1.254
 - GOVNET NIC: 10.65.28.254
@@ -62,36 +62,38 @@ Run these on the Windows Server:
 
 ```powershell
 Get-Service ITUAICCTVBackend | Select-Object Name, Status, StartType
-Get-ScheduledTask -TaskName "ITU AI CCTV Person Monitor" | Select-Object TaskName, State
-Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Person Monitor"
+Get-ScheduledTask |
+  Where-Object { $_.TaskName -like "ITU AI CCTV*" } |
+  Select-Object TaskName, State
+Get-ScheduledTaskInfo -TaskName "ITU AI CCTV Live Monitor" |
+  Select-Object LastRunTime, LastTaskResult
 Invoke-RestMethod http://127.0.0.1:8000/dashboard/health | ConvertTo-Json -Depth 8
 ```
 
 Expected:
 
 - ITUAICCTVBackend is Running and Automatic.
-- ITU AI CCTV Person Monitor is Ready.
+- ITU AI CCTV Live Monitor is Running.
+- ITU AI CCTV Person Monitor is Disabled.
+- LastTaskResult 267009 / 0x41301 for the live monitor means the long-running task is currently running.
 - /dashboard/health returns camera totals, scheduler latest run/summary, and per-camera health.
 
-Manual scheduler and evidence checks:
+Manual evidence checks:
 
 ```powershell
-Start-ScheduledTask -TaskName "ITU AI CCTV Person Monitor"
-Start-Sleep -Seconds 120
-Get-Content C:\ituaicctv\backend\data\task-logs\monitor_person_all.log -Tail 220
 Get-ChildItem C:\ituaicctv\backend\data\evidence |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 10 Name, LastWriteTime, Length
 explorer "\\192.168.1.254\ituaicctv-evidence"
 ```
 
-Optional near-live monitor manual run:
+Near-live monitor manual run:
 
 ```powershell
 C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py
 ```
 
-The near-live monitor runs repeated sequential full-camera scan cycles. It reuses the existing person detection, evidence save, event, cooldown, and Telegram alert flow, but suppresses routine no_person event writes to avoid excessive log noise. It is not frame-by-frame video analytics and does not use the MJPEG TV stream. Watch CPU, network, and camera load before lowering `LIVE_MONITOR_INTERVAL_SECONDS` below 10 seconds. `LIVE_MONITOR_ALERT_COOLDOWN_SECONDS` defaults to 300 seconds.
+The near-live monitor runs repeated sequential full-camera scan cycles. It reuses the existing person detection, evidence save, event, cooldown, and Telegram alert flow, but suppresses routine no_person event writes to avoid excessive event-log noise. It is not frame-by-frame video analytics and does not use the MJPEG TV stream. Watch CPU, network, and camera load before lowering `LIVE_MONITOR_INTERVAL_SECONDS` below 10 seconds. `LIVE_MONITOR_ALERT_COOLDOWN_SECONDS` defaults to 300 seconds.
 
 ## Evidence Share Usage
 
@@ -139,17 +141,26 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 
 - YOLO person detection from Hikvision RTSP streams.
 - PERSON_CONFIDENCE_THRESHOLD defaults to 0.60. This reduces false positives but can miss distant or low-light people.
+- makmal_cam_13 uses `person_confidence_threshold: 0.75` because a tree/topiary was detected as a person around 0.62-0.63.
+- kuarantin_cam_11 uses `person_confidence_threshold: 0.75` because a fixed blue pipe was detected as a person around 0.65.
+- Higher per-camera thresholds are a temporary tuning approach; future ignore-zone / polygon masks should exclude fixed false-positive objects.
 - Telegram person alerts include confidence and active threshold when available.
 - New person evidence uses a clearer composite image: full CCTV frame with bounding boxes plus a zoom crop of the highest-confidence person.
+- High-resolution evidence is attempted after person detection. Detection can stay on lightweight channel 102, while evidence may try higher-resolution/main stream channel 101 when available.
+- High-resolution evidence no longer blindly scales low-resolution boxes onto a different frame. If a high-resolution frame is captured, person detection runs again on that frame and high-resolution boxes are used. If capture or re-detection fails, evidence falls back to the original detection frame and boxes.
+- JPEG quality is improved, but Telegram/evidence may still look blurry if the person is far away, the face is small, the angle is high, lighting is poor, or the CCTV source detail is insufficient. Telegram photo compression can also reduce clarity.
 - The crop is labelled as person review evidence, not face identity evidence. Low-resolution sub-stream crops may be marked LOW-RES CROP / FACE ID NOT SUITABLE.
 - Face readiness labels are advisory only: not_available, not_suitable, possible, or suitable. Poor readiness is expected when faces are small, blurry, angled, far from camera, moving, poorly lit, or from low-resolution CCTV streams.
-- Face recognition readiness is false by default until a face is detected from suitable high-resolution evidence. No identity recognition or face database is implemented.
+- Face readiness metadata includes `face_detection_available`, `face_detected`, `face_count`, `best_face_box`, `face_quality`, `face_readiness`, `reasons`, and related metrics when available.
+- Evidence/Telegram may show `FACE: NOT SUITABLE`, `FACE: POSSIBLE`, `FACE: SUITABLE`, or `FACE DETECTION: UNAVAILABLE`.
+- Face readiness is conservative; high-angle CCTV, side profiles, blur, small faces, and poor lighting may return not_suitable or no_face_detected.
 - Internal face recognition labels are opt-in only. When `FACE_RECOGNITION_ENABLED=true` and a local embedding library plus approved enrolled embeddings are available, matching evidence may show an approved internal label such as `BURN`; otherwise recognition stays disabled/unavailable or `UNKNOWN`.
 - `UNKNOWN` only means no reliable internal match. It does not mean suspicious.
 - Future reliable face recognition should capture a high-resolution main-stream or snapshot frame after person_detected=True while keeping fast person detection on the sub-stream.
 - Composite evidence keeps the existing filename pattern: person_detected_<camera_id>_<timestamp>.jpg
 - If composite generation fails, the fallback is the boxed full-frame evidence image.
 - Telegram sends the saved evidence image, so new detections use the clearer composite.
+- Future improvement: optional Telegram send-as-document mode to reduce compression.
 
 Optional internal enrollment command:
 
@@ -187,6 +198,37 @@ python .\scripts\enroll_face.py --label BURN --backend opencv_lbph --images C:\t
 ```
 
 LBPH is a lightweight internal baseline, not high-security identity proof. Accuracy depends heavily on face size, lighting, angle, motion blur, and camera distance.
+
+Production face-recognition status:
+
+- Production currently has `opencv-contrib-python 5.0.0.93` and `numpy 2.4.6`.
+- `cv2.face` exists and `LBPHFaceRecognizer_create` exists on the production server.
+- The OpenCV Haar cascade file was manually added under the production venv at `cv2\data\haarcascade_frontalface_default.xml`; confirmed size was 930127 bytes.
+- Server tests after dependency install passed: `python -m compileall backend\app scripts` and `python -m unittest discover -s tests -p "test_*.py" -v`, result 17 tests OK.
+- A test internal label `BURN` has been enrolled with OpenCV LBPH using three private local samples. Generated private model files are under the ignored `backend/data/face-embeddings/` directory and must never be committed.
+- Production `.env` currently enables `FACE_RECOGNITION_ENABLED=true` and `FACE_RECOGNITION_BACKEND=opencv_lbph`. Keep `.env` private.
+
+Production BURN enrollment command used:
+
+```powershell
+C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\enroll_face.py `
+  --label BURN `
+  --backend opencv_lbph `
+  --images `
+  <PRIVATE_FACE_IMAGE_01.jpg> `
+  <PRIVATE_FACE_IMAGE_02.jpg> `
+  <PRIVATE_FACE_IMAGE_03.jpg>
+```
+
+Result: `Enrolled BURN: 3 LBPH face sample(s) saved.`
+
+Private local face-photo source examples, not committed and not hardcoded in application code:
+
+- Staff 2024 source folder: `H:\ITUNAS\~StartHere~\Pictures\2024\gambar staff 2024 januari\New folder` with about 160 image files.
+- Student A2 2025 source folder: `H:\ITUNAS\~StartHere~\Pictures\2025\A2 GAMBAR`.
+- Do not rename or alter original source folders.
+- Future design should use CSV enrollment mappings such as `label,group,role,image_path` and support multiple private source CSVs/folders.
+- Keep private enrollment data under ignored local paths: `backend/data/face-enrollment/`, `backend/data/face-reference/`, and `backend/data/face-embeddings/`.
 
 ## Latest Dashboard UI
 
@@ -276,7 +318,7 @@ First production deployment (2026-07-03):
 - Local 127.0.0.1 dashboard URLs are only for browsing on the machine running the backend.
 - GitHub Pages is no longer the primary production dashboard; daily operation uses the Windows Server backend dashboard.
 - Firewall opens port 8000 for backend dashboard/API access.
-- Person Monitor scheduled task is registered and confirmed Ready.
+- Current primary monitor is `ITU AI CCTV Live Monitor`, confirmed Running. The older `ITU AI CCTV Person Monitor` batch task is Disabled and retained as backup.
 - Dashboard confirmed reachable across the LAN / Teleport.
 - Server setup PowerShell scripts fixed for Windows PowerShell 5.1 (project-root path, PS7-only null-conditional operator, non-ASCII em-dash) and SETUP_GUIDE.txt rewritten for a clean-server install.
 
@@ -527,14 +569,14 @@ Per-camera dashboard health includes:
 - stale_threshold_minutes
 - last_seen_source
 
-Current expected healthy dashboard state after a successful scheduler run:
+Current expected healthy dashboard state:
 
 - total known cameras: 13
 - enabled: 12
 - disabled/offline: 1
-- active: 12 after the newly added enabled cameras are confirmed by health checks
-- stale: 0
-- latest confirmed scheduler summary before adding new cameras: status=ok, mode=check_all, enabled=9, person=0, no_person=9, failed=0
+- active/stale counts depend on latest live monitor events and the configured stale threshold
+- live monitor task: ITU AI CCTV Live Monitor Running
+- old batch task: ITU AI CCTV Person Monitor Disabled
 
 Known disabled/offline camera note:
 
