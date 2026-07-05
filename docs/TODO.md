@@ -22,10 +22,11 @@
 
 ## Current Production Backlog
 
-- [ ] Tune person threshold per camera.
+- [x] Add per-camera person threshold support; makmal_cam_13 uses 0.75 for known topiary/tree false positive.
 - [ ] Add minimum bounding box size filtering for person detections.
 - [ ] Add false-positive review labels in dashboard.
 - [ ] Improve dashboard confidence display and review workflow.
+- [ ] Add per-camera ignore zones / polygon masks for known static false positives such as trees or topiary.
 - [ ] Add polygon zone intrusion detection per camera.
 - [ ] Add restricted zone alerts.
 - [ ] Add line crossing detection with direction.
@@ -41,7 +42,9 @@
 - [ ] Pilot near-live monitor on production as optional ITUAICCTVLiveMonitor service.
 - [ ] Watch CPU/network/camera load before reducing live monitor interval below 10 seconds.
 - [ ] Continue face detection and safe opt-in face recognition roadmap.
-- [ ] Add high-resolution main-stream/snapshot evidence capture after person_detected=True for future face detection.
+- [x] Try high-resolution main-stream evidence capture after person_detected=True, with fallback to detection frame.
+- [ ] Add explicit per-camera evidence_channel/high_resolution_channel config after confirming H.264 main-stream support.
+- [ ] Add optional Telegram send-as-document mode to reduce Telegram photo compression for evidence review.
 - [ ] Add explicit face evidence quality/readiness metadata before any recognition pilot.
 - [ ] Confirm kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 in the next scheduler/dashboard health run.
 
@@ -134,6 +137,7 @@ Camera list:
 - [x] Add per-camera event stats
 - [x] Add per-camera latest event endpoint
 - [x] Add configurable PERSON_CONFIDENCE_THRESHOLD for person-only detection
+- [x] Add optional per-camera person_confidence_threshold
 - [x] Include person detection confidence in Telegram alerts when available
 - [ ] Add duplicate detection filtering
 - [ ] Add configurable detection classes

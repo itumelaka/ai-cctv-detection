@@ -31,7 +31,7 @@ Operational foundation:
 
 ## Forward Backlog
 
-1. Person detection reliability: per-camera thresholds, minimum bounding box size, false-positive review labels, dashboard confidence display.
+1. Person detection reliability: per-camera thresholds, minimum bounding box size, false-positive review labels, dashboard confidence display, and ignore-zone/polygon masks for known static false positives such as trees or topiary.
 2. Zone intrusion detection: polygon zones per camera and restricted zone alerts.
 3. Line crossing detection: virtual line and direction.
 4. Loitering detection: duration-based alert.
@@ -45,6 +45,7 @@ Operational foundation:
 12. WebRTC/HLS/media-server upgrade for better live-view scaling if multiple viewers or cameras need streaming.
 13. Pilot the near-live monitor as an optional `ITUAICCTVLiveMonitor` Windows service after observing CPU, network, and camera load.
 14. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
+15. Optional Telegram send-as-document evidence delivery to reduce Telegram photo compression.
 
 ## Current Checkpoint
 
@@ -168,6 +169,8 @@ Operational constraints:
 - Never commit face images, face embeddings, or personal identity data.
 - Keep face reference data local and private on the production server.
 - Telegram alerts should avoid unnecessary personal data. Prefer "face present" or "review required" over names unless policy explicitly allows it.
+- Person detection can stay on a lightweight sub-stream, but reliable face review or recognition requires a higher-resolution evidence frame or snapshot after person_detected=True.
+- Camera placement, distance, lens angle, lighting, and source resolution can make face identity recognition unsuitable even when person detection is correct.
 
 Proposed future private folders, documented only:
 

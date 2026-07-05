@@ -1,8 +1,15 @@
 from functools import lru_cache
+import logging
 import cv2
 from ultralytics import YOLO
-from app.camera import capture_frame, capture_frame_for_camera
+from app.camera import (
+    capture_frame,
+    capture_frame_for_camera,
+    capture_frame_for_camera_channel,
+)
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 MODEL_NAME = "yolov8n.pt"
 PERSON_CLASS_NAME = "person"
@@ -11,6 +18,35 @@ PERSON_CROP_PANEL_MIN_WIDTH = 320
 FACE_READY_MIN_FRAME_HEIGHT_PX = 720
 FACE_READY_MIN_PERSON_BOX_WIDTH_PX = 120
 FACE_READY_MIN_PERSON_BOX_HEIGHT_PX = 220
+DEFAULT_EVIDENCE_CHANNEL = "101"
+
+
+def _person_confidence_threshold(camera: dict | None = None) -> float:
+    if camera and camera.get("person_confidence_threshold") is not None:
+        return float(camera.get("person_confidence_threshold"))
+
+    return settings.person_confidence_threshold
+
+
+def _evidence_channel(camera: dict | None = None) -> str | None:
+    if not camera:
+        return None
+
+    configured_channel = (
+        camera.get("evidence_channel")
+        or camera.get("high_resolution_channel")
+        or camera.get("main_stream_channel")
+    )
+
+    if configured_channel:
+        return str(configured_channel)
+
+    detection_channel = str(camera.get("channel", "102"))
+
+    if detection_channel != DEFAULT_EVIDENCE_CHANNEL:
+        return DEFAULT_EVIDENCE_CHANNEL
+
+    return None
 
 
 @lru_cache(maxsize=1)
@@ -110,36 +146,50 @@ def run_yolo_detection() -> dict:
 
 
 def run_person_detection() -> dict:
+    detection_response, _ = run_person_detection_with_frame()
+    return detection_response
+
+
+def run_person_detection_with_frame() -> tuple[dict, object]:
     frame = capture_frame()
-    confidence = settings.person_confidence_threshold
+    confidence = _person_confidence_threshold()
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
-    return _build_detection_response(
+    detection_response = _build_detection_response(
         frame,
         detections,
         filter_name=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
 
+    return detection_response, frame
+
 
 def run_person_detection_for_camera(camera: dict) -> dict:
+    detection_response, _ = run_person_detection_with_frame_for_camera(camera)
+    return detection_response
+
+
+def run_person_detection_with_frame_for_camera(camera: dict) -> tuple[dict, object]:
     frame = capture_frame_for_camera(camera)
-    confidence = settings.person_confidence_threshold
+    confidence = _person_confidence_threshold(camera)
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
-    return _build_detection_response(
+    detection_response = _build_detection_response(
         frame,
         detections,
         camera_info=camera,
         filter_name=PERSON_CLASS_NAME,
         confidence_threshold=confidence
     )
+
+    return detection_response, frame
 
 
 def _draw_detections(frame, detections):
@@ -316,12 +366,41 @@ def _build_person_evidence_frame(frame, detections):
     try:
         crop_panel = _build_person_crop_panel(frame, main_detection)
         return cv2.hconcat([boxed_frame, crop_panel])
-    except Exception:
+    except Exception as error:
+        logger.warning(
+            "Composite person evidence failed; falling back to boxed full frame: %s",
+            error,
+        )
         return boxed_frame
 
 
+def _scale_detections_for_frame(detections, source_frame, target_frame):
+    source_height, source_width = source_frame.shape[:2]
+    target_height, target_width = target_frame.shape[:2]
+
+    if source_width <= 0 or source_height <= 0:
+        return detections
+
+    scale_x = target_width / source_width
+    scale_y = target_height / source_height
+    scaled_detections = []
+
+    for detection in detections:
+        scaled_detection = detection.copy()
+        box = detection.get("box", {})
+        scaled_detection["box"] = {
+            "x1": round(float(box.get("x1", 0)) * scale_x, 2),
+            "y1": round(float(box.get("y1", 0)) * scale_y, 2),
+            "x2": round(float(box.get("x2", 0)) * scale_x, 2),
+            "y2": round(float(box.get("y2", 0)) * scale_y, 2),
+        }
+        scaled_detections.append(scaled_detection)
+
+    return scaled_detections
+
+
 def _encode_jpeg(frame) -> bytes:
-    success, buffer = cv2.imencode(".jpg", frame)
+    success, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
 
     if not success:
         raise RuntimeError("Failed to encode frame as JPEG.")
@@ -341,7 +420,7 @@ def run_person_snapshot_jpeg() -> bytes:
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
-        confidence_threshold=settings.person_confidence_threshold
+        confidence_threshold=_person_confidence_threshold()
     )
     frame = _build_person_evidence_frame(frame, detections)
     return _encode_jpeg(frame)
@@ -352,7 +431,48 @@ def run_person_snapshot_jpeg_for_camera(camera: dict) -> bytes:
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
-        confidence_threshold=settings.person_confidence_threshold
+        confidence_threshold=_person_confidence_threshold(camera)
     )
     frame = _build_person_evidence_frame(frame, detections)
     return _encode_jpeg(frame)
+
+
+def build_person_evidence_jpeg_from_detection(
+    frame,
+    detection_result: dict,
+    camera: dict | None = None,
+) -> bytes:
+    evidence_frame = frame
+    detections = detection_result.get("detections", [])
+    evidence_detections = detections
+    channel = _evidence_channel(camera)
+
+    if channel:
+        try:
+            high_res_frame = capture_frame_for_camera_channel(camera, channel)
+            evidence_detections = _scale_detections_for_frame(
+                detections,
+                source_frame=frame,
+                target_frame=high_res_frame,
+            )
+            evidence_frame = high_res_frame
+        except Exception as error:
+            camera_id = camera.get("id") if camera else "default_camera"
+            logger.warning(
+                "High-resolution evidence capture failed for %s channel %s; "
+                "falling back to detection frame: %s",
+                camera_id,
+                channel,
+                error,
+            )
+            print(
+                "WARNING: High-resolution evidence capture failed for "
+                f"{camera_id} channel {channel}; falling back to detection frame. "
+                f"Reason: {error}"
+            )
+
+    evidence_frame = _build_person_evidence_frame(
+        evidence_frame,
+        evidence_detections,
+    )
+    return _encode_jpeg(evidence_frame)

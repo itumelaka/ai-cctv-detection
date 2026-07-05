@@ -33,13 +33,20 @@ def get_camera_by_id(camera_id: str) -> dict[str, Any]:
     raise KeyError(f"Camera not found: {camera_id}")
 
 
-def build_rtsp_url(camera: dict[str, Any]) -> str:
+def _camera_channel(camera: dict[str, Any], channel_override: str | None = None) -> str:
+    return str(channel_override or camera.get("channel", "102"))
+
+
+def build_rtsp_url(
+    camera: dict[str, Any],
+    channel_override: str | None = None,
+) -> str:
     username = quote(settings.cctv_username, safe="")
     password = quote(settings.cctv_password, safe="")
 
     host = camera["host"]
     port = camera.get("port", 554)
-    channel = camera.get("channel", "102")
+    channel = _camera_channel(camera, channel_override=channel_override)
 
     return (
         f"rtsp://{username}:{password}"
@@ -48,12 +55,15 @@ def build_rtsp_url(camera: dict[str, Any]) -> str:
     )
 
 
-def build_masked_rtsp_url(camera: dict[str, Any]) -> str:
+def build_masked_rtsp_url(
+    camera: dict[str, Any],
+    channel_override: str | None = None,
+) -> str:
     username = quote(settings.cctv_username, safe="")
 
     host = camera["host"]
     port = camera.get("port", 554)
-    channel = camera.get("channel", "102")
+    channel = _camera_channel(camera, channel_override=channel_override)
 
     return (
         f"rtsp://{username}:********"

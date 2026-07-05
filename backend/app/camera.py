@@ -57,6 +57,14 @@ def capture_frame_for_camera(camera: dict):
     return capture_frame_from_rtsp(rtsp_url)
 
 
+def capture_frame_for_camera_channel(camera: dict, channel: str):
+    if not settings.cctv_username or not settings.cctv_password:
+        raise RuntimeError("CCTV username/password is incomplete. Check backend/.env.")
+
+    rtsp_url = build_rtsp_url(camera, channel_override=channel)
+    return capture_frame_from_rtsp(rtsp_url)
+
+
 def test_camera_connection(camera: dict) -> dict:
     try:
         frame = capture_frame_for_camera(camera)

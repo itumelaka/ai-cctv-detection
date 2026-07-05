@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from app.config import settings
 from app.detection import (
-    run_person_detection,
-    run_person_detection_for_camera,
+    build_person_evidence_jpeg_from_detection,
+    run_person_detection_with_frame,
+    run_person_detection_with_frame_for_camera,
     run_person_snapshot_jpeg,
     run_person_snapshot_jpeg_for_camera,
 )
@@ -59,6 +60,7 @@ def _build_person_event(
     snapshot_func,
     camera_context: dict | None = None,
     log_no_person: bool = True,
+    detection_frame=None,
 ) -> dict:
     detections_count = detection_result["detections_count"]
     person_detected = detection_result["person_detected"]
@@ -80,7 +82,22 @@ def _build_person_event(
             message = "Person detected in CCTV frame. Evidence snapshot skipped due to cooldown."
         else:
             message = "Person detected in CCTV frame."
-            image_bytes = snapshot_func()
+            try:
+                if detection_frame is None:
+                    raise RuntimeError("Detection frame unavailable for composite evidence.")
+
+                image_bytes = build_person_evidence_jpeg_from_detection(
+                    detection_frame,
+                    detection_result,
+                    camera=camera_context,
+                )
+            except Exception as error:
+                print(
+                    "WARNING: Composite evidence generation failed; "
+                    f"falling back to snapshot capture. Reason: {error}"
+                )
+                image_bytes = snapshot_func()
+
             filename = f"person_detected_{camera_id}_{timestamp}.jpg"
             evidence_path = save_evidence_image(image_bytes, filename)
     else:
@@ -126,22 +143,24 @@ def _build_person_event(
 
 
 def evaluate_person_event(log_no_person: bool = True) -> dict:
-    detection_result = run_person_detection()
+    detection_result, detection_frame = run_person_detection_with_frame()
     return _build_person_event(
         detection_result=detection_result,
         snapshot_func=run_person_snapshot_jpeg,
         log_no_person=log_no_person,
+        detection_frame=detection_frame,
     )
 
 
 def evaluate_person_event_for_camera(camera: dict, log_no_person: bool = True) -> dict:
-    detection_result = run_person_detection_for_camera(camera)
+    detection_result, detection_frame = run_person_detection_with_frame_for_camera(camera)
 
     return _build_person_event(
         detection_result=detection_result,
         snapshot_func=lambda: run_person_snapshot_jpeg_for_camera(camera),
         camera_context=camera,
         log_no_person=log_no_person,
+        detection_frame=detection_frame,
     )
 
 

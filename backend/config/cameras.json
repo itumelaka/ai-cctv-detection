@@ -115,7 +115,8 @@
     "host": "192.168.40.25",
     "port": 554,
     "channel": "102",
+    "person_confidence_threshold": 0.75,
     "enabled": true,
-    "notes": "Confirmed VLC RTSP stream label: MAKMAL. Direct IP camera. Sub-stream channel 102."
+    "notes": "Confirmed VLC RTSP stream label: MAKMAL. Direct IP camera. Sub-stream channel 102. Person threshold raised to 0.75 because static topiary/tree caused false positives around 0.62-0.63."
   }
 ]
