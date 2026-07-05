@@ -74,6 +74,7 @@ def send_person_alert(event: dict) -> bool:
     ]
     max_confidence = max(confidences) if confidences else None
     confidence_threshold = event.get("confidence_threshold")
+    face_readiness = event.get("face_readiness") or {}
     evidence_path = _resolve_evidence_path(event.get("evidence_path"))
 
     caption = f"<b>Person Detected</b>\nCamera: {camera_name}"
@@ -91,6 +92,14 @@ def send_person_alert(event: dict) -> bool:
 
     if confidence_threshold is not None:
         caption += f"\nThreshold: {float(confidence_threshold):.2f}"
+
+    if face_readiness:
+        readiness = face_readiness.get("face_readiness", "unknown")
+        reasons = face_readiness.get("reasons") or []
+        caption += f"\nFace readiness: {readiness}"
+
+        if reasons:
+            caption += f"\nReason: {', '.join(reasons[:3])}"
 
     sent = _send_photo(caption=caption, image_path=evidence_path)
 

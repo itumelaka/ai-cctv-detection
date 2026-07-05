@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from app.config import settings
 from app.detection import (
-    build_person_evidence_jpeg_from_detection,
+    build_person_evidence_from_detection,
     run_person_detection_with_frame,
     run_person_detection_with_frame_for_camera,
     run_person_snapshot_jpeg,
@@ -68,6 +68,7 @@ def _build_person_event(
     timestamp = current_time.isoformat()
 
     evidence_path = None
+    face_readiness = None
     cooldown_active = False
     cooldown_seconds = settings.person_event_cooldown_seconds
     camera_id = _get_camera_id(camera_context)
@@ -86,7 +87,7 @@ def _build_person_event(
                 if detection_frame is None:
                     raise RuntimeError("Detection frame unavailable for composite evidence.")
 
-                image_bytes = build_person_evidence_jpeg_from_detection(
+                image_bytes, face_readiness = build_person_evidence_from_detection(
                     detection_frame,
                     detection_result,
                     camera=camera_context,
@@ -132,6 +133,7 @@ def _build_person_event(
         "detections": detection_result["detections"],
         "confidence_threshold": detection_result.get("confidence_threshold"),
         "evidence_path": evidence_path,
+        "face_readiness": face_readiness,
         "cooldown_active": cooldown_active,
         "cooldown_seconds": cooldown_seconds
     }

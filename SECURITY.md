@@ -140,6 +140,12 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 
 Do not leave Change/Modify access open after copying.
 
+## Face Readiness and Recognition Boundaries
+
+Current face-related behavior is limited to advisory face readiness metadata on person evidence. If local OpenCV face detection is available, the system may mark whether a face-like region was detected and whether the crop appears poor, possible, or suitable for human review. This does not identify a person.
+
+Do not add a face database, embeddings, reference images, identity labels, or automatic identity comparison without a separate approved face recognition phase. Any future recognition phase must include clear authorization or consent, access control, audit logs, retention/deletion rules, and private local storage on the production server.
+
 ## Responsible Use
 
 Sistem ini bertujuan membantu keselamatan dan operasi institut. Ia tidak patut digunakan untuk pemantauan individu secara berlebihan, pengecaman identiti tanpa kebenaran, atau penggunaan yang melanggar polisi organisasi.

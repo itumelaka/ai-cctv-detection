@@ -12,6 +12,7 @@
 - Evidence is saved only when person_detected=True.
 - New evidence image behavior: full-frame boxes plus zoom crop of highest-confidence person.
 - Evidence crop labels avoid implying face identity quality; low-resolution crops can be marked FACE ID NOT SUITABLE.
+- Face readiness metadata is advisory only and does not perform identity recognition or store face embeddings.
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
 - Fullscreen TV Command Center mode is available at /dashboard-tv.
 - TV mode includes a selectable backend-proxied MJPEG live camera panel; latest evidence is shown separately as historical proof.
@@ -45,7 +46,7 @@
 - [x] Try high-resolution main-stream evidence capture after person_detected=True, with fallback to detection frame.
 - [ ] Add explicit per-camera evidence_channel/high_resolution_channel config after confirming H.264 main-stream support.
 - [ ] Add optional Telegram send-as-document mode to reduce Telegram photo compression for evidence review.
-- [ ] Add explicit face evidence quality/readiness metadata before any recognition pilot.
+- [x] Add explicit face evidence quality/readiness metadata before any recognition pilot.
 - [ ] Confirm kuarantin_cam_11, biosekuriti_cam_12, and makmal_cam_13 in the next scheduler/dashboard health run.
 
 ## Production Verification Commands
@@ -149,9 +150,10 @@ Camera list:
 - [x] Document phased face feature roadmap
 - [x] Document private future face folders without creating sensitive data
 - [x] Ignore future private face data folders in Git
+- [x] Add advisory face readiness metadata to person evidence without identifying identity
+- [x] Detect face presence/readiness from evidence crops when local OpenCV face detection is available
+- [x] Keep face_recognition_ready false until suitable high-resolution face evidence exists
 - [ ] Add face detection only endpoint
-- [ ] Detect face presence without identifying identity
-- [ ] Keep face_recognition_ready false until suitable high-resolution face evidence exists
 - [ ] Capture high-resolution main-stream/snapshot evidence before any reliable face recognition attempt
 - [ ] Add face crop evidence storage
 - [ ] Add privacy and consent notes
@@ -160,6 +162,7 @@ Camera list:
 - [ ] Add known persons database
 - [ ] Add confidence threshold for identity matching
 - [ ] Add dashboard human review and confirmation flow before identity actions
+- [ ] Add formal face data retention/deletion and audit controls before any identity recognition pilot
 
 ## Number Plate Recognition TODO
 

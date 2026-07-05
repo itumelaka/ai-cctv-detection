@@ -39,6 +39,7 @@ Production server status:
 - Optional near-live monitor script: scripts/monitor_person_live.py
 - Near-live monitor defaults: scan cycle every 10 seconds, per-camera alert cooldown 300 seconds.
 - Existing 5-minute Task Scheduler scan remains available as a backup until near-live monitoring is proven stable.
+- Person evidence includes advisory face readiness metadata when local OpenCV face detection is available. This does not identify people.
 
 Camera and network status:
 
@@ -140,6 +141,7 @@ Get-SmbShareAccess -Name "ituaicctv-evidence"
 - Telegram person alerts include confidence and active threshold when available.
 - New person evidence uses a clearer composite image: full CCTV frame with bounding boxes plus a zoom crop of the highest-confidence person.
 - The crop is labelled as person review evidence, not face identity evidence. Low-resolution sub-stream crops may be marked LOW-RES CROP / FACE ID NOT SUITABLE.
+- Face readiness labels are advisory only: not_available, not_suitable, possible, or suitable. Poor readiness is expected when faces are small, blurry, angled, far from camera, moving, poorly lit, or from low-resolution CCTV streams.
 - Face recognition readiness is false by default until a face is detected from suitable high-resolution evidence. No identity recognition or face database is implemented.
 - Future reliable face recognition should capture a high-resolution main-stream or snapshot frame after person_detected=True while keeping fast person detection on the sub-stream.
 - Composite evidence keeps the existing filename pattern: person_detected_<camera_id>_<timestamp>.jpg
@@ -576,6 +578,8 @@ Security reminders:
 - Never commit camera passwords
 - Dashboard responses must not expose RTSP credentials
 - Evidence images may contain real CCTV footage and must be handled carefully
+- Face readiness metadata is not identity recognition. The system must not store face databases, embeddings, reference images, or personal identity labels unless a future authorised recognition phase is explicitly approved.
+- Future face recognition requires clear policy, consent/authorisation, access control, audit logging, retention/deletion rules, and high-resolution face evidence.
 
 ## Local Development
 

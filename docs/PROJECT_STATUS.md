@@ -77,6 +77,7 @@ Current AI and dashboard features:
 - PERSON_CONFIDENCE_THRESHOLD default is 0.60.
 - Telegram person alerts include confidence and threshold when available.
 - Evidence image now uses clearer composite: full CCTV frame with bounding boxes plus zoomed crop of highest-confidence person.
+- Person evidence now includes advisory face readiness metadata when local OpenCV face detection is available: detection availability, face count, best face box, quality, readiness, and reasons. This is not identity recognition.
 - /dashboard-ui is now a dark AI Command Center with LIVE AI MONITORING indicator, scan line, summary cards, AI Status / Health, latest AI event, event timeline, evidence gallery, camera cards, section scroll navigation, refresh loading state, hover/glow effects, person-detected pulse/glow, and prefers-reduced-motion support.
 
 ## How to Verify After Server Restart
@@ -142,6 +143,7 @@ Production evidence and logs:
 - Person-only detection uses PERSON_CONFIDENCE_THRESHOLD with a safer default of 0.60.
 - Telegram person alerts include the highest available person confidence and active threshold when detection data is available.
 - Person evidence snapshots are generated through the person snapshot path, which draws bounding boxes and confidence labels.
+- Face readiness is stored with person evidence events when available, but the system does not store face identities, embeddings, reference images, or identity labels.
 - Production evidence folder: C:\ituaicctv\backend\data\evidence.
 - Production task log folder: C:\ituaicctv\backend\data\task-logs.
 - Production service log folder: C:\ituaicctv\backend\data\service-logs.

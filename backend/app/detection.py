@@ -19,6 +19,10 @@ FACE_READY_MIN_FRAME_HEIGHT_PX = 720
 FACE_READY_MIN_PERSON_BOX_WIDTH_PX = 120
 FACE_READY_MIN_PERSON_BOX_HEIGHT_PX = 220
 DEFAULT_EVIDENCE_CHANNEL = "101"
+FACE_MIN_SIZE_PX = 48
+FACE_GOOD_SIZE_PX = 96
+FACE_BLUR_POOR_THRESHOLD = 70.0
+FACE_BLUR_GOOD_THRESHOLD = 150.0
 
 
 def _person_confidence_threshold(camera: dict | None = None) -> float:
@@ -244,6 +248,150 @@ def _crop_detection(frame, detection, padding: int = PERSON_CROP_PADDING_PX):
     return frame[y1:y2, x1:x2].copy()
 
 
+def _default_face_readiness(
+    available: bool,
+    quality: str = "unknown",
+    readiness: str = "not_available",
+    reasons: list[str] | None = None,
+) -> dict:
+    return {
+        "face_detection_available": available,
+        "face_detected": False,
+        "face_count": 0,
+        "best_face_box": None,
+        "face_quality": quality,
+        "face_readiness": readiness,
+        "reasons": reasons or [],
+    }
+
+
+def _face_cascade_path() -> str | None:
+    haarcascades = getattr(getattr(cv2, "data", None), "haarcascades", None)
+
+    if not haarcascades:
+        return None
+
+    cascade_path = f"{haarcascades}haarcascade_frontalface_default.xml"
+
+    try:
+        if cv2.CascadeClassifier(cascade_path).empty():
+            return None
+    except Exception:
+        return None
+
+    return cascade_path
+
+
+def assess_face_readiness(image) -> dict:
+    try:
+        if image is None:
+            return _default_face_readiness(
+                available=False,
+                reasons=["face_detection_unavailable"],
+            )
+
+        cascade_path = _face_cascade_path()
+
+        if not cascade_path:
+            return _default_face_readiness(
+                available=False,
+                reasons=["face_detection_unavailable"],
+            )
+
+        cascade = cv2.CascadeClassifier(cascade_path)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        crop_height, crop_width = gray.shape[:2]
+        crop_area = max(1, crop_width * crop_height)
+        low_resolution_crop = min(crop_width, crop_height) < 160
+        faces = cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(24, 24),
+        )
+
+        if len(faces) == 0:
+            return _default_face_readiness(
+                available=True,
+                quality="poor",
+                readiness="not_suitable",
+                reasons=["no_face_detected"],
+            )
+
+        best_face = max(faces, key=lambda face: int(face[2]) * int(face[3]))
+        x, y, width, height = [int(value) for value in best_face]
+        face_crop = gray[y:y + height, x:x + width]
+        blur_score = float(cv2.Laplacian(face_crop, cv2.CV_64F).var())
+        min_face_size = min(width, height)
+        face_area_ratio = (width * height) / crop_area
+        reasons = []
+
+        if low_resolution_crop:
+            reasons.append("low_resolution_crop")
+
+        if min_face_size < FACE_MIN_SIZE_PX:
+            reasons.append("face_too_small")
+
+        if face_area_ratio < 0.015:
+            reasons.append("face_too_small")
+
+        if blur_score < FACE_BLUR_POOR_THRESHOLD:
+            reasons.append("image_blurry")
+
+        reasons = list(dict.fromkeys(reasons))
+
+        if reasons:
+            quality = "poor"
+            readiness = "not_suitable"
+            reasons.append("face_detected_but_quality_low")
+        elif min_face_size >= FACE_GOOD_SIZE_PX and blur_score >= FACE_BLUR_GOOD_THRESHOLD:
+            quality = "good"
+            readiness = "suitable"
+            reasons.append("face_quality_suitable")
+        else:
+            quality = "fair"
+            readiness = "possible"
+            reasons.append("face_quality_possible")
+
+        return {
+            "face_detection_available": True,
+            "face_detected": True,
+            "face_count": len(faces),
+            "best_face_box": {
+                "x": x,
+                "y": y,
+                "width": width,
+                "height": height,
+            },
+            "face_quality": quality,
+            "face_readiness": readiness,
+            "reasons": reasons,
+            "blur_score": round(blur_score, 2),
+            "face_area_ratio": round(face_area_ratio, 4),
+        }
+    except Exception as error:
+        logger.warning("Face readiness assessment failed: %s", error)
+        return _default_face_readiness(
+            available=False,
+            reasons=["face_detection_unavailable"],
+        )
+
+
+def _face_label(face_readiness: dict | None) -> str:
+    if not face_readiness or not face_readiness.get("face_detection_available"):
+        return "FACE DETECTION: UNAVAILABLE"
+
+    readiness = face_readiness.get("face_readiness")
+
+    if readiness == "suitable":
+        return "FACE: SUITABLE"
+
+    if readiness == "possible":
+        return "FACE: POSSIBLE"
+
+    return "FACE: NOT SUITABLE"
+
+
 def _person_box_size(detection):
     box = detection["box"]
     width = max(0, float(box["x2"]) - float(box["x1"]))
@@ -297,7 +445,7 @@ def _resize_into_panel(image, panel_width: int, panel_height: int):
     )
 
 
-def _build_person_crop_panel(frame, detection):
+def _build_person_crop_panel(frame, detection, face_readiness: dict | None = None):
     height, width = frame.shape[:2]
     label_height = 34
     warning_height = 46
@@ -353,10 +501,21 @@ def _build_person_crop_panel(frame, detection):
             1
         )
 
+    face_label = _face_label(face_readiness)
+    cv2.putText(
+        panel,
+        face_label,
+        (12, max(44, height - 56)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.45,
+        (255, 255, 255),
+        1
+    )
+
     return panel
 
 
-def _build_person_evidence_frame(frame, detections):
+def _build_person_evidence_frame(frame, detections, face_readiness: dict | None = None):
     boxed_frame = _draw_detections(frame.copy(), detections)
     main_detection = _highest_confidence_detection(detections)
 
@@ -364,7 +523,11 @@ def _build_person_evidence_frame(frame, detections):
         return boxed_frame
 
     try:
-        crop_panel = _build_person_crop_panel(frame, main_detection)
+        crop_panel = _build_person_crop_panel(
+            frame,
+            main_detection,
+            face_readiness=face_readiness,
+        )
         return cv2.hconcat([boxed_frame, crop_panel])
     except Exception as error:
         logger.warning(
@@ -412,11 +575,11 @@ def run_person_snapshot_jpeg_for_camera(camera: dict) -> bytes:
     return _encode_jpeg(frame)
 
 
-def build_person_evidence_jpeg_from_detection(
+def build_person_evidence_from_detection(
     frame,
     detection_result: dict,
     camera: dict | None = None,
-) -> bytes:
+) -> tuple[bytes, dict]:
     evidence_frame = frame
     detections = detection_result.get("detections", [])
     evidence_detections = detections
@@ -462,8 +625,26 @@ def build_person_evidence_jpeg_from_detection(
                 f"Reason: {error}"
             )
 
+    main_detection = _highest_confidence_detection(evidence_detections)
+    person_crop = _crop_detection(evidence_frame, main_detection) if main_detection else None
+    face_readiness = assess_face_readiness(person_crop)
+
     evidence_frame = _build_person_evidence_frame(
         evidence_frame,
         evidence_detections,
+        face_readiness=face_readiness,
     )
-    return _encode_jpeg(evidence_frame)
+    return _encode_jpeg(evidence_frame), face_readiness
+
+
+def build_person_evidence_jpeg_from_detection(
+    frame,
+    detection_result: dict,
+    camera: dict | None = None,
+) -> bytes:
+    image_bytes, _ = build_person_evidence_from_detection(
+        frame,
+        detection_result,
+        camera=camera,
+    )
+    return image_bytes

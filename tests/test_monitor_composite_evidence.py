@@ -34,8 +34,19 @@ def _with_frame(*_args, **_kwargs):
     return _detection_result(), object()
 
 
-fake_detection.build_person_evidence_jpeg_from_detection = (
-    lambda _frame, _result, camera=None: b"composite-image"
+fake_detection.build_person_evidence_from_detection = (
+    lambda _frame, _result, camera=None: (
+        b"composite-image",
+        {
+            "face_detection_available": False,
+            "face_detected": False,
+            "face_count": 0,
+            "best_face_box": None,
+            "face_quality": "unknown",
+            "face_readiness": "not_available",
+            "reasons": ["face_detection_unavailable"],
+        },
+    )
 )
 fake_detection.run_person_detection_with_frame = _with_frame
 fake_detection.run_person_detection_with_frame_for_camera = _with_frame
@@ -74,6 +85,7 @@ class MonitorCompositeEvidenceTests(unittest.TestCase):
         self.assertEqual(result["action"], "attention_required")
         self.assertTrue(result["event"]["person_detected"])
         self.assertEqual(result["event"]["evidence_path"], "data/evidence/test.jpg")
+        self.assertEqual(result["event"]["face_readiness"]["face_readiness"], "not_available")
         save_image.assert_called_once()
         self.assertEqual(save_image.call_args.args[0], b"composite-image")
 
