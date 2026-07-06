@@ -357,6 +357,26 @@ def _top_confidence_detections(detections, limit: int = PERSON_CROP_PANEL_MAX_CR
     )[:limit]
 
 
+def evidence_person_targets(
+    detections,
+    limit: int = PERSON_CROP_PANEL_MAX_CROPS,
+) -> list[dict]:
+    return [
+        {
+            "detection": detection,
+            "metadata": {
+                "bbox": detection.get("box"),
+                "confidence": detection.get("confidence"),
+                "crop_rank": index,
+            },
+        }
+        for index, detection in enumerate(
+            _top_confidence_detections(detections, limit=limit),
+            start=1,
+        )
+    ]
+
+
 def _crop_detection(frame, detection, padding: int = PERSON_CROP_PADDING_PX):
     height, width = frame.shape[:2]
     box = detection["box"]
@@ -649,7 +669,8 @@ def _build_person_crops_panel(
     )
     panel[:, :] = (12, 18, 26)
 
-    top_detections = _top_confidence_detections(detections)
+    person_targets = evidence_person_targets(detections)
+    top_detections = [target["detection"] for target in person_targets]
 
     if not top_detections:
         return panel
@@ -831,7 +852,7 @@ def build_person_evidence_from_detection(
     frame,
     detection_result: dict,
     camera: dict | None = None,
-) -> tuple[bytes, dict, dict]:
+) -> tuple[bytes, dict, dict, dict]:
     evidence_frame = frame
     detections = detection_result.get("detections", [])
     evidence_detections = detections
@@ -904,7 +925,13 @@ def build_person_evidence_from_detection(
         face_recognition=face_recognition,
         confidence_threshold=detection_result.get("confidence_threshold"),
     )
-    return _encode_jpeg(evidence_frame), face_readiness, face_recognition
+    person_targets = evidence_person_targets(evidence_detections)
+    evidence_metadata = {
+        "detections": [target["detection"] for target in person_targets],
+        "person_detections": [target["metadata"] for target in person_targets],
+        "detections_count": len(person_targets),
+    }
+    return _encode_jpeg(evidence_frame), face_readiness, face_recognition, evidence_metadata
 
 
 def build_person_evidence_jpeg_from_detection(
@@ -912,9 +939,10 @@ def build_person_evidence_jpeg_from_detection(
     detection_result: dict,
     camera: dict | None = None,
 ) -> bytes:
-    image_bytes, _, _ = build_person_evidence_from_detection(
+    result = build_person_evidence_from_detection(
         frame,
         detection_result,
         camera=camera,
     )
+    image_bytes = result[0]
     return image_bytes

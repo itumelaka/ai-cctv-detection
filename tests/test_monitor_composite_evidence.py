@@ -115,6 +115,73 @@ class MonitorCompositeEvidenceTests(unittest.TestCase):
         save_image.assert_called_once()
         self.assertEqual(save_image.call_args.args[0], b"composite-image")
 
+    def test_monitor_event_logs_person_targets_returned_by_evidence_builder(self):
+        camera = {
+            "id": "test_cam",
+            "name": "Test Camera",
+            "host": "192.168.40.99",
+            "channel": "102",
+        }
+        evidence_metadata = {
+            "detections_count": 2,
+            "detections": [
+                {
+                    "class_name": "person",
+                    "confidence": 0.95,
+                    "box": {"x1": 500, "y1": 300, "x2": 900, "y2": 980},
+                },
+                {
+                    "class_name": "person",
+                    "confidence": 0.82,
+                    "box": {"x1": 920, "y1": 320, "x2": 1200, "y2": 960},
+                },
+            ],
+            "person_detections": [
+                {
+                    "crop_rank": 1,
+                    "confidence": 0.95,
+                    "bbox": {"x1": 500, "y1": 300, "x2": 900, "y2": 980},
+                },
+                {
+                    "crop_rank": 2,
+                    "confidence": 0.82,
+                    "bbox": {"x1": 920, "y1": 320, "x2": 1200, "y2": 960},
+                },
+            ],
+        }
+        appended_events = []
+
+        def fake_evidence_builder(_frame, _result, camera=None):
+            return (
+                b"composite-image",
+                {"face_readiness": "not_available"},
+                {"face_recognition_enabled": False},
+                evidence_metadata,
+            )
+
+        with (
+            patch("app.events._is_person_event_in_cooldown", return_value=False),
+            patch("app.events.build_person_evidence_from_detection", side_effect=fake_evidence_builder),
+            patch("app.events.append_event_log", side_effect=appended_events.append),
+            patch("app.events.save_evidence_image", return_value="data/evidence/test.jpg"),
+            patch("app.monitor.send_person_alert", return_value=True),
+        ):
+            result = run_person_monitor_check_for_camera(
+                camera,
+                log_no_person=False,
+            )
+
+        self.assertEqual(result["event"]["detections_count"], 2)
+        self.assertEqual(len(result["event"]["person_detections"]), 2)
+        self.assertEqual(result["event"]["person_detections"][1]["crop_rank"], 2)
+        self.assertEqual(
+            result["event"]["person_detections"][1]["bbox"],
+            {"x1": 920, "y1": 320, "x2": 1200, "y2": 960},
+        )
+        self.assertEqual(result["event"]["detections"], evidence_metadata["detections"])
+        self.assertEqual(result["event"]["message"], "Person detected in CCTV frame (2 detection(s)).")
+        self.assertEqual(appended_events[0]["person_detections"], evidence_metadata["person_detections"])
+
 
 if __name__ == "__main__":
     unittest.main()

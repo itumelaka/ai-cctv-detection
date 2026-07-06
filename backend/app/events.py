@@ -73,6 +73,31 @@ def _ranked_person_detections(detections: list[dict]) -> list[dict]:
     ]
 
 
+def _unpack_evidence_result(result):
+    image_bytes, face_readiness, face_recognition = result[:3]
+    evidence_metadata = result[3] if len(result) > 3 else None
+    return image_bytes, face_readiness, face_recognition, evidence_metadata
+
+
+def _event_detection_metadata(detection_result: dict, evidence_metadata: dict | None) -> dict:
+    if evidence_metadata:
+        person_detections = evidence_metadata.get("person_detections") or []
+        detections = evidence_metadata.get("detections") or detection_result["detections"]
+        return {
+            "detections_count": len(person_detections),
+            "detections": detections,
+            "person_detections": person_detections,
+        }
+
+    detections = detection_result["detections"]
+    person_detections = _ranked_person_detections(detections)
+    return {
+        "detections_count": len(person_detections),
+        "detections": detections,
+        "person_detections": person_detections,
+    }
+
+
 def _build_person_event(
     detection_result: dict,
     snapshot_func,
@@ -86,6 +111,7 @@ def _build_person_event(
     timestamp = current_time.isoformat()
 
     evidence_path = None
+    evidence_metadata = None
     face_readiness = None
     face_recognition = None
     cooldown_active = False
@@ -109,10 +135,17 @@ def _build_person_event(
                 if detection_frame is None:
                     raise RuntimeError("Detection frame unavailable for composite evidence.")
 
-                image_bytes, face_readiness, face_recognition = build_person_evidence_from_detection(
-                    detection_frame,
-                    detection_result,
-                    camera=camera_context,
+                (
+                    image_bytes,
+                    face_readiness,
+                    face_recognition,
+                    evidence_metadata,
+                ) = _unpack_evidence_result(
+                    build_person_evidence_from_detection(
+                        detection_frame,
+                        detection_result,
+                        camera=camera_context,
+                    )
                 )
             except Exception as error:
                 print(
@@ -143,6 +176,18 @@ def _build_person_event(
             "channel": camera_context.get("channel")
         })
 
+    detection_metadata = _event_detection_metadata(detection_result, evidence_metadata)
+    detections_count = detection_metadata["detections_count"]
+
+    if person_detected:
+        message = f"Person detected in CCTV frame ({detections_count} detection(s))."
+
+        if cooldown_active:
+            message = (
+                f"Person detected in CCTV frame ({detections_count} detection(s)). "
+                "Evidence snapshot skipped due to cooldown."
+            )
+
     event = {
         "status": "ok",
         "event_type": event_type,
@@ -151,9 +196,9 @@ def _build_person_event(
         "timestamp": timestamp,
         "camera": camera_data,
         "person_detected": person_detected,
-        "detections_count": detections_count,
-        "detections": detection_result["detections"],
-        "person_detections": _ranked_person_detections(detection_result["detections"]),
+        "detections_count": detection_metadata["detections_count"],
+        "detections": detection_metadata["detections"],
+        "person_detections": detection_metadata["person_detections"],
         "confidence_threshold": detection_result.get("confidence_threshold"),
         "evidence_path": evidence_path,
         "face_readiness": face_readiness,

@@ -290,6 +290,44 @@ class DetectionCameraConfigTests(unittest.TestCase):
         self.assertIn("CONF 0.71 / THR 0.60", labels)
         self.assertNotIn("CONF 0.66 / THR 0.60", labels)
 
+    def test_two_person_detection_input_produces_matching_evidence_metadata(self):
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.71,
+                "box": {"x1": 10, "y1": 10, "x2": 80, "y2": 180},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.93,
+                "box": {"x1": 90, "y1": 10, "x2": 160, "y2": 180},
+            },
+        ]
+
+        targets = detection.evidence_person_targets(detections)
+
+        self.assertEqual(len(targets), 2)
+        self.assertEqual(targets[0]["metadata"]["crop_rank"], 1)
+        self.assertEqual(targets[0]["metadata"]["confidence"], 0.93)
+        self.assertEqual(targets[0]["metadata"]["bbox"], {"x1": 90, "y1": 10, "x2": 160, "y2": 180})
+        self.assertEqual(targets[1]["metadata"]["crop_rank"], 2)
+        self.assertEqual(targets[1]["metadata"]["confidence"], 0.71)
+
+    def test_single_person_detection_input_produces_one_evidence_target(self):
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.88,
+                "box": {"x1": 10, "y1": 10, "x2": 80, "y2": 180},
+            }
+        ]
+
+        targets = detection.evidence_person_targets(detections)
+
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(targets[0]["metadata"]["crop_rank"], 1)
+        self.assertEqual(targets[0]["metadata"]["confidence"], 0.88)
+
     def test_face_readiness_returns_not_available_when_cascade_missing(self):
         original_data = getattr(detection.cv2, "data", None)
 

@@ -21,6 +21,9 @@ class DashboardIdentityAssignmentUiTests(unittest.TestCase):
         self.assertIn("person_bbox", dashboard_ui)
         self.assertIn("person_target_label", dashboard_ui)
         self.assertIn("identity_person_target", dashboard_ui)
+        self.assertIn("event?.person_detections", dashboard_ui)
+        self.assertIn("PERSON ${rank}", dashboard_ui)
+        self.assertIn("targetCount > 1", dashboard_ui)
         self.assertNotIn("batch-enroll", dashboard_ui)
         self.assertNotIn("enroll_lbph_from_csv", dashboard_ui)
 
