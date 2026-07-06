@@ -32,10 +32,58 @@ Recognition depends on:
 - Keep reference images, embeddings, and models local/private.
 - Never commit face enrollment images, embeddings, or model files.
 - Do not expose face data through public dashboards or docs.
+- Do not commit real enrollment CSV files with staff/student names, IDs, or private image paths.
+
+## Face Enrollment Manager
+
+The face enrollment manager is local-only and uses OpenCV/LBPH. It does not use paid APIs or cloud face recognition.
+
+Write a placeholder CSV template:
+
+```powershell
+python scripts\manage_face_enrollment.py template --output private-face-enrollment-template.csv
+```
+
+Generate a draft CSV from a private local folder:
+
+```powershell
+python scripts\manage_face_enrollment.py draft `
+  --source-dir "C:\private\approved-face-reference" `
+  --output "C:\private\face-enrollment-draft.csv"
+```
+
+Draft rows are not approved by default. A human reviewer must verify each row and set `approved_for_face_recognition` to `yes` before enrollment.
+
+Batch enroll approved rows into the local LBPH model:
+
+```powershell
+python scripts\manage_face_enrollment.py batch-enroll `
+  --csv "C:\private\face-enrollment-reviewed.csv" `
+  --reject-report "C:\private\face-enrollment-reject-report.json"
+```
+
+CSV columns:
+
+- `label`
+- `identity_id`
+- `display_name`
+- `image_path`
+- `approved_for_face_recognition`
+- `approved_by`
+- `consent_reference`
+- `notes`
+
+Rejected rows are written to the reject report with row number, image path, label, and reason. Common reject reasons include unapproved rows, missing image paths, unreadable images, no suitable detected face, and low-quality face readiness.
+
+Optional backend helpers:
+
+- `GET /faces/enrollment/template` returns the placeholder CSV headers and example row.
+- `POST /faces/enrollment/identity-assignment` validates and normalizes a local identity assignment payload.
+
+These endpoints do not upload face images, copy private image paths, or call any cloud recognition service.
 
 ## Future Work
 
-- CSV enrollment mapping
 - reviewer audit logs
 - retention/deletion policy
 - clearer operator wording for unknown/low-quality recognition results

@@ -23,6 +23,7 @@ Backend AI CCTV monitoring project for ITU Melaka using existing Hikvision CCTV 
 - Event review / acknowledgement statuses.
 - Per-camera confidence thresholds and disabled placeholder ignore-zone polygons for known static false positives.
 - Optional internal face-recognition foundation, privacy-gated and not identity proof.
+- Local-only Face Enrollment Manager for approved CSV/LBPH enrollment and reject reports.
 
 ## Dashboards
 

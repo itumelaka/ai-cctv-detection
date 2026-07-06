@@ -79,6 +79,8 @@ Face readiness and internal recognition status:
 - Production currently enables `FACE_RECOGNITION_ENABLED=true` and `FACE_RECOGNITION_BACKEND=opencv_lbph` in private `.env`.
 - Test internal label `BURN` is enrolled using three private local samples. Generated LBPH model/label files live under the ignored `backend/data/face-embeddings/` directory and must never be committed.
 - `UNKNOWN` means no reliable internal match and does not mean suspicious.
+- Face Enrollment Manager supports local placeholder CSV templates, reviewed draft CSV generation, batch OpenCV/LBPH enrollment, and JSON reject reports through `scripts/manage_face_enrollment.py`.
+- Real enrollment CSV files, face images, identity data, reject reports with private paths, and generated model files must stay private and out of Git.
 
 ## Scheduler Exit Codes
 
@@ -162,6 +164,15 @@ GET /dashboard/live/{camera_id}/snapshot.jpg?quality=hd
 GET /dashboard-ui
 GET /dashboard-tv
 ```
+
+### Face Enrollment
+
+```
+GET /faces/enrollment/template
+POST /faces/enrollment/identity-assignment
+```
+
+Face enrollment helpers are local-only. They expose template and validation metadata only; they do not upload face images or call cloud recognition services.
 
 Full HTML dashboard served directly by the backend. Auto-refreshes every 30 seconds. Loads data from all dashboard endpoints.
 
