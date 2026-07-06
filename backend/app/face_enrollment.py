@@ -124,6 +124,44 @@ def _truthy(value: str) -> bool:
     return str(value or "").strip().lower() in TRUE_VALUES
 
 
+def _optional_int(value) -> int | None:
+    if value is None or value == "":
+        return None
+
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_float(value) -> float | None:
+    if value is None or value == "":
+        return None
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_bbox(value):
+    if value is None or value == "":
+        return None
+
+    if isinstance(value, dict):
+        return value
+
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+
+        return parsed if isinstance(parsed, dict) else None
+
+    return None
+
+
 def _cv2_module():
     import cv2
 
@@ -222,6 +260,10 @@ def validate_identity_assignment(payload: dict) -> dict:
         "event_id": str(payload.get("event_id", "")).strip(),
         "review_id": str(payload.get("review_id", "")).strip(),
         "evidence_filename": str(payload.get("evidence_filename", "")).strip(),
+        "person_rank": _optional_int(payload.get("person_rank")),
+        "person_confidence": _optional_float(payload.get("person_confidence")),
+        "person_bbox": _optional_bbox(payload.get("person_bbox")),
+        "person_target_label": str(payload.get("person_target_label", "")).strip(),
         "approved_for_training": _truthy(payload.get("approved_for_training", "")),
         "approved_for_face_recognition": _truthy(payload.get("approved_for_face_recognition", "")),
         "note": str(payload.get("note", "")).strip(),

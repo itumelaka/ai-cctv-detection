@@ -173,6 +173,10 @@ class FaceEnrollmentTests(unittest.TestCase):
                 "assigned_by": "operator",
                 "note": "Reviewed from dashboard.",
                 "approved_for_training": True,
+                "person_rank": "2",
+                "person_confidence": "0.84",
+                "person_bbox": {"x1": 140, "y1": 25, "x2": 230, "y2": 210},
+                "person_target_label": "PERSON 2",
             }
         )
 
@@ -183,8 +187,27 @@ class FaceEnrollmentTests(unittest.TestCase):
         self.assertEqual(assignment["event_id"], "person_detected_cam_1.jpg")
         self.assertEqual(assignment["review_id"], "person_detected_cam_1.jpg")
         self.assertEqual(assignment["evidence_filename"], "person_detected_cam_1.jpg")
+        self.assertEqual(assignment["person_rank"], 2)
+        self.assertEqual(assignment["person_confidence"], 0.84)
+        self.assertEqual(assignment["person_bbox"], {"x1": 140, "y1": 25, "x2": 230, "y2": 210})
+        self.assertEqual(assignment["person_target_label"], "PERSON 2")
         self.assertTrue(assignment["approved_for_training"])
         self.assertEqual(assignment["note"], "Reviewed from dashboard.")
+
+    def test_legacy_identity_assignment_payload_still_works_without_person_target(self):
+        assignment = face_enrollment.validate_identity_assignment(
+            {
+                "label": "Legacy Person",
+                "display_name": "Legacy Person",
+                "approved_for_face_recognition": "yes",
+            }
+        )
+
+        self.assertEqual(assignment["label"], "LEGACY_PERSON")
+        self.assertIsNone(assignment["person_rank"])
+        self.assertIsNone(assignment["person_confidence"])
+        self.assertIsNone(assignment["person_bbox"])
+        self.assertEqual(assignment["person_target_label"], "")
 
 
 if __name__ == "__main__":

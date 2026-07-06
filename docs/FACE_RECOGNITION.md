@@ -86,6 +86,8 @@ These endpoints do not upload face images, copy private image paths, or call any
 
 The backend dashboard can show a compact `Assign Identity` action for evidence events that are unknown or not yet recognized. Operators can enter an approved local label, display name, reviewer name, note, and whether the event may be considered for future training.
 
+For multi-person evidence, the dashboard requires the operator to choose the person target, such as `PERSON 1`, `PERSON 2`, or `PERSON 3`, before saving. The assignment payload includes person rank, confidence, and bounding box metadata so later review can distinguish which detected person was assigned.
+
 This dashboard action only records/validates the operator assignment payload through `/faces/enrollment/identity-assignment`. It does not train OpenCV LBPH, update the face model, change Telegram alerts, or add new reference images.
 
 ## Future Work

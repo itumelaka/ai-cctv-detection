@@ -636,6 +636,36 @@ def dashboard_ui():
       width: auto;
     }
 
+    .identity-targets {
+      display: grid;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.035);
+    }
+
+    .identity-targets legend {
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .identity-target-option {
+      display: flex !important;
+      grid-template-columns: none !important;
+      gap: 8px !important;
+      align-items: center;
+      min-height: 30px;
+      text-transform: none !important;
+    }
+
+    .identity-target-option input {
+      width: auto;
+    }
+
     .identity-modal-actions {
       display: flex;
       flex-wrap: wrap;
@@ -1025,6 +1055,14 @@ def dashboard_ui():
         <input type="hidden" id="identityEventId">
         <input type="hidden" id="identityReviewId">
         <input type="hidden" id="identityEvidenceFilename">
+        <input type="hidden" id="identityPersonRank">
+        <input type="hidden" id="identityPersonConfidence">
+        <input type="hidden" id="identityPersonBbox">
+        <input type="hidden" id="identityPersonTargetLabel">
+        <fieldset id="identityPersonTargets" class="identity-targets">
+          <legend>Person target</legend>
+          <div id="identityPersonTargetList"></div>
+        </fieldset>
         <label>
           assigned_label
           <input id="assignedLabel" name="assigned_label" autocomplete="off" required>
@@ -1331,6 +1369,92 @@ def dashboard_ui():
         || "";
     }
 
+    function personTargetsFromEvent(event) {
+      const personDetections = Array.isArray(event?.person_detections) ? event.person_detections : [];
+
+      if (personDetections.length) {
+        return personDetections
+          .slice()
+          .sort((left, right) => Number(left?.crop_rank || 0) - Number(right?.crop_rank || 0))
+          .map((detection, index) => {
+            const rank = Number(detection?.crop_rank || index + 1);
+            const confidence = confidenceNumber(detection?.confidence);
+            return {
+              rank,
+              confidence,
+              bbox: detection?.bbox || detection?.box || null,
+              label: `PERSON ${rank}`,
+            };
+          });
+      }
+
+      return (event?.detections || [])
+        .slice()
+        .sort((left, right) => Number(right?.confidence || 0) - Number(left?.confidence || 0))
+        .map((detection, index) => {
+          const rank = index + 1;
+          const confidence = confidenceNumber(detection?.confidence);
+          return {
+            rank,
+            confidence,
+            bbox: detection?.box || detection?.bbox || null,
+            label: `PERSON ${rank}`,
+          };
+        });
+    }
+
+    function selectedPersonTarget() {
+      const checked = document.querySelector("input[name='identity_person_target']:checked");
+      if (!checked) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(checked.value);
+      } catch {
+        return null;
+      }
+    }
+
+    function updateSelectedPersonTarget() {
+      const target = selectedPersonTarget();
+      el("identityPersonRank").value = target?.rank || "";
+      el("identityPersonConfidence").value = target?.confidence ?? "";
+      el("identityPersonBbox").value = target?.bbox ? JSON.stringify(target.bbox) : "";
+      el("identityPersonTargetLabel").value = target?.label || "";
+    }
+
+    function renderIdentityTargets(event) {
+      const targetList = el("identityPersonTargetList");
+      clearNode(targetList);
+      const targets = personTargetsFromEvent(event).slice(0, 3);
+      const targetCount = targets.length;
+      el("identityPersonTargets").style.display = targetCount ? "grid" : "none";
+
+      targets.forEach((target, index) => {
+        const option = document.createElement("label");
+        option.className = "identity-target-option";
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "identity_person_target";
+        input.value = JSON.stringify(target);
+        input.required = targetCount > 1;
+
+        if (targetCount === 1) {
+          input.checked = true;
+        }
+
+        input.addEventListener("change", updateSelectedPersonTarget);
+        const confidence = target.confidence === null || target.confidence === undefined
+          ? "-"
+          : Number(target.confidence).toFixed(2);
+        option.append(input, document.createTextNode(`${target.label} - confidence ${confidence}`));
+        targetList.appendChild(option);
+      });
+
+      updateSelectedPersonTarget();
+    }
+
     function canAssignIdentity(event) {
       const recognizedLabel = String(event?.recognized_label || "").toUpperCase();
       const recognitionAttempted = event?.recognition_attempted === true;
@@ -1348,6 +1472,7 @@ def dashboard_ui():
       el("identityEventId").value = eventAssignmentId(event);
       el("identityReviewId").value = event?.review_id || eventAssignmentId(event);
       el("identityEvidenceFilename").value = evidenceFilenameFromEvent(event);
+      renderIdentityTargets(event);
       el("assignedLabel").value = "";
       el("assignedDisplayName").value = "";
       el("assignedBy").value = "";
@@ -1372,12 +1497,22 @@ def dashboard_ui():
         event_id: el("identityEventId").value,
         review_id: el("identityReviewId").value,
         evidence_filename: el("identityEvidenceFilename").value,
+        person_rank: el("identityPersonRank").value ? Number(el("identityPersonRank").value) : null,
+        person_confidence: el("identityPersonConfidence").value ? Number(el("identityPersonConfidence").value) : null,
+        person_bbox: el("identityPersonBbox").value ? JSON.parse(el("identityPersonBbox").value) : null,
+        person_target_label: el("identityPersonTargetLabel").value,
         assigned_label: el("assignedLabel").value,
         assigned_display_name: el("assignedDisplayName").value,
         assigned_by: el("assignedBy").value,
         note: el("assignmentNote").value,
         approved_for_training: el("approvedForTraining").checked
       };
+
+      if (personTargetsFromEvent(activeIdentityEvent).length > 1 && !payload.person_rank) {
+        statusNode.className = "identity-status error";
+        statusNode.textContent = "Select PERSON target before saving.";
+        return;
+      }
 
       el("identitySaveButton").disabled = true;
       statusNode.className = "identity-status";
