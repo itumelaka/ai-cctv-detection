@@ -26,6 +26,9 @@ CSV_HEADERS = [
 ]
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 TRUE_VALUES = {"1", "true", "yes", "y", "on", "approved"}
+IDENTITY_ASSIGNMENTS_PATH = Path(
+    "backend/data/face-enrollment/identity-assignments/identity_assignments.json"
+)
 
 
 def safe_label(label: str) -> str:
@@ -160,6 +163,77 @@ def _optional_bbox(value):
         return parsed if isinstance(parsed, dict) else None
 
     return None
+
+
+def identity_assignment_key(assignment: dict) -> str:
+    event_id = str(assignment.get("event_id", "")).strip()
+    evidence_filename = str(assignment.get("evidence_filename", "")).strip()
+    person_rank = assignment.get("person_rank")
+    person_target_label = str(assignment.get("person_target_label", "")).strip()
+    return "|".join(
+        [
+            event_id,
+            evidence_filename,
+            "" if person_rank is None else str(person_rank),
+            person_target_label,
+        ]
+    )
+
+
+def _assignment_storage_path(path: Path | None = None) -> Path:
+    return path or IDENTITY_ASSIGNMENTS_PATH
+
+
+def load_identity_assignments(path: Path | None = None) -> dict:
+    storage_path = _assignment_storage_path(path)
+    if not storage_path.exists():
+        return {"assignments": []}
+
+    data = json.loads(storage_path.read_text(encoding="utf-8"))
+    assignments = data.get("assignments", data if isinstance(data, list) else [])
+    if not isinstance(assignments, list):
+        assignments = []
+
+    return {
+        "assignments": [
+            assignment for assignment in assignments if isinstance(assignment, dict)
+        ]
+    }
+
+
+def save_identity_assignment(payload: dict, path: Path | None = None) -> dict:
+    assignment = validate_identity_assignment(payload)
+    storage_path = _assignment_storage_path(path)
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing_payload = load_identity_assignments(storage_path)
+    assignments = existing_payload["assignments"]
+    key = identity_assignment_key(assignment)
+    now = datetime.now(timezone.utc).isoformat()
+
+    saved_assignment = {
+        **assignment,
+        "assignment_key": key,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    for index, existing in enumerate(assignments):
+        if identity_assignment_key(existing) == key:
+            saved_assignment["created_at"] = existing.get("created_at") or now
+            assignments[index] = {**existing, **saved_assignment, "updated_at": now}
+            break
+    else:
+        assignments.append(saved_assignment)
+
+    document = {
+        "status": "ok",
+        "local_only": True,
+        "updated_at": now,
+        "assignments": assignments,
+    }
+    storage_path.write_text(json.dumps(document, indent=2), encoding="utf-8")
+    return saved_assignment
 
 
 def _cv2_module():

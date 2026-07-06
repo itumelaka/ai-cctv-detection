@@ -2,6 +2,7 @@ import csv
 import json
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,35 @@ sys.path.insert(0, str(BACKEND_PATH))
 
 from app import face_enrollment
 
+try:
+    from app.routes import face_enrollment as face_enrollment_route
+except ModuleNotFoundError as error:
+    if error.name != "fastapi":
+        raise
+
+    fake_fastapi = types.ModuleType("fastapi")
+
+    class FakeAPIRouter:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get(self, *args, **kwargs):
+            return lambda function: function
+
+        def post(self, *args, **kwargs):
+            return lambda function: function
+
+    class FakeHTTPException(Exception):
+        def __init__(self, status_code, detail):
+            super().__init__(detail)
+            self.status_code = status_code
+            self.detail = detail
+
+    fake_fastapi.APIRouter = FakeAPIRouter
+    fake_fastapi.HTTPException = FakeHTTPException
+    sys.modules["fastapi"] = fake_fastapi
+    from app.routes import face_enrollment as face_enrollment_route
+
 
 class FaceEnrollmentTests(unittest.TestCase):
     def setUp(self):
@@ -23,7 +53,14 @@ class FaceEnrollmentTests(unittest.TestCase):
         self.original_load_image = face_enrollment._load_image
         self.original_assess = face_enrollment.assess_face_readiness
         self.original_prepare = face_enrollment._prepare_lbph_face
+        self.original_assignments_path = face_enrollment.IDENTITY_ASSIGNMENTS_PATH
         face_enrollment.settings.face_embeddings_dir = str(self.base / "embeddings")
+        face_enrollment.IDENTITY_ASSIGNMENTS_PATH = (
+            self.base
+            / "face-enrollment"
+            / "identity-assignments"
+            / "identity_assignments.json"
+        )
 
     def tearDown(self):
         face_enrollment.settings.face_embeddings_dir = self.original_embeddings_dir
@@ -31,6 +68,7 @@ class FaceEnrollmentTests(unittest.TestCase):
         face_enrollment._load_image = self.original_load_image
         face_enrollment.assess_face_readiness = self.original_assess
         face_enrollment._prepare_lbph_face = self.original_prepare
+        face_enrollment.IDENTITY_ASSIGNMENTS_PATH = self.original_assignments_path
         self.temp_dir.cleanup()
 
     def test_csv_template_has_privacy_placeholder(self):
@@ -208,6 +246,104 @@ class FaceEnrollmentTests(unittest.TestCase):
         self.assertIsNone(assignment["person_confidence"])
         self.assertIsNone(assignment["person_bbox"])
         self.assertEqual(assignment["person_target_label"], "")
+
+    def test_identity_assignment_post_creates_storage_file_and_parent_directory(self):
+        storage_path = face_enrollment.IDENTITY_ASSIGNMENTS_PATH
+        self.assertFalse(storage_path.parent.exists())
+
+        response = face_enrollment_route.face_identity_assignment(
+            {
+                "event_id": "event-001",
+                "evidence_filename": "event-001.jpg",
+                "assigned_label": "Person One",
+                "assigned_display_name": "Person One",
+                "assigned_by": "operator",
+                "note": "Approved from dashboard.",
+                "approved_for_training": True,
+            }
+        )
+
+        self.assertEqual(response["status"], "ok")
+        self.assertTrue(storage_path.exists())
+        stored = json.loads(storage_path.read_text(encoding="utf-8"))
+        self.assertEqual(len(stored["assignments"]), 1)
+        self.assertEqual(stored["assignments"][0]["assigned_label"], "PERSON_ONE")
+        self.assertEqual(stored["assignments"][0]["note"], "Approved from dashboard.")
+        self.assertTrue(stored["assignments"][0]["approved_for_training"])
+        self.assertIn("created_at", stored["assignments"][0])
+        self.assertIn("updated_at", stored["assignments"][0])
+
+    def test_identity_assignment_post_preserves_person_specific_fields(self):
+        response = face_enrollment_route.face_identity_assignment(
+            {
+                "event_id": "event-002",
+                "review_id": "event-002",
+                "evidence_filename": "event-002.jpg",
+                "assigned_label": "Person Two",
+                "assigned_display_name": "Person Two",
+                "assigned_by": "operator",
+                "person_rank": 2,
+                "person_confidence": 0.84,
+                "person_bbox": {"x1": 140, "y1": 25, "x2": 230, "y2": 210},
+                "person_target_label": "PERSON 2",
+            }
+        )
+
+        assignment = response["assignment"]
+        self.assertEqual(assignment["person_rank"], 2)
+        self.assertEqual(assignment["person_confidence"], 0.84)
+        self.assertEqual(assignment["person_bbox"], {"x1": 140, "y1": 25, "x2": 230, "y2": 210})
+        self.assertEqual(assignment["person_target_label"], "PERSON 2")
+
+        stored = json.loads(face_enrollment.IDENTITY_ASSIGNMENTS_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(stored["assignments"][0]["person_rank"], 2)
+        self.assertEqual(stored["assignments"][0]["person_target_label"], "PERSON 2")
+
+    def test_identity_assignment_post_upserts_same_event_person_target(self):
+        first = face_enrollment_route.face_identity_assignment(
+            {
+                "event_id": "event-003",
+                "evidence_filename": "event-003.jpg",
+                "assigned_label": "Person Two",
+                "person_rank": 2,
+                "person_target_label": "PERSON 2",
+                "note": "First review.",
+            }
+        )["assignment"]
+
+        second = face_enrollment_route.face_identity_assignment(
+            {
+                "event_id": "event-003",
+                "evidence_filename": "event-003.jpg",
+                "assigned_label": "Person Two Updated",
+                "person_rank": 2,
+                "person_target_label": "PERSON 2",
+                "note": "Updated review.",
+            }
+        )["assignment"]
+
+        stored = json.loads(face_enrollment.IDENTITY_ASSIGNMENTS_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(len(stored["assignments"]), 1)
+        self.assertEqual(stored["assignments"][0]["assigned_label"], "PERSON_TWO_UPDATED")
+        self.assertEqual(stored["assignments"][0]["note"], "Updated review.")
+        self.assertEqual(stored["assignments"][0]["created_at"], first["created_at"])
+        self.assertEqual(second["created_at"], first["created_at"])
+
+    def test_identity_assignments_get_returns_saved_assignments(self):
+        face_enrollment_route.face_identity_assignment(
+            {
+                "event_id": "event-004",
+                "evidence_filename": "event-004.jpg",
+                "assigned_label": "Person Four",
+            }
+        )
+
+        response = face_enrollment_route.face_identity_assignments()
+
+        self.assertEqual(response["status"], "ok")
+        self.assertTrue(response["local_only"])
+        self.assertEqual(len(response["assignments"]), 1)
+        self.assertEqual(response["assignments"][0]["assigned_label"], "PERSON_FOUR")
 
 
 if __name__ == "__main__":

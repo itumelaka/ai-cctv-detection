@@ -90,6 +90,8 @@ For multi-person evidence, the dashboard requires the operator to choose the per
 
 This dashboard action only records/validates the operator assignment payload through `/faces/enrollment/identity-assignment`. It does not train OpenCV LBPH, update the face model, change Telegram alerts, or add new reference images.
 
+Identity assignments are persisted locally in the private runtime file `backend/data/face-enrollment/identity-assignments/identity_assignments.json`. The file stores operator-approved assignment metadata only, including the event/evidence identifiers and person target metadata for multi-person events. Saved assignments can be read back through `GET /faces/enrollment/identity-assignments`.
+
 ## Future Work
 
 - reviewer audit logs

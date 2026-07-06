@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
-from app.face_enrollment import CSV_HEADERS, csv_template_rows, validate_identity_assignment
+from app.face_enrollment import (
+    CSV_HEADERS,
+    csv_template_rows,
+    load_identity_assignments,
+    save_identity_assignment,
+)
 
 
 router = APIRouter(
@@ -27,12 +32,22 @@ def face_enrollment_template():
 @router.post("/identity-assignment")
 def face_identity_assignment(payload: dict):
     try:
-        assignment = validate_identity_assignment(payload)
+        assignment = save_identity_assignment(payload)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
     return {
         "status": "ok",
         "assignment": assignment,
+        "local_only": True,
+    }
+
+
+@router.get("/identity-assignments")
+def face_identity_assignments():
+    assignments = load_identity_assignments()
+    return {
+        "status": "ok",
+        "assignments": assignments["assignments"],
         "local_only": True,
     }
