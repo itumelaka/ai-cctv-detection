@@ -11,7 +11,7 @@
 - Camera registry has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera.
 - Exit code 0 = ok/no attention. Exit code 2 = attention/person detected, not a crash.
 - Evidence is saved only when person_detected=True.
-- New evidence image behavior: full-frame boxes plus zoom crop of highest-confidence person.
+- New evidence image behavior: full-frame boxes plus up to three top-confidence person crops.
 - Evidence crop labels avoid implying face identity quality; low-resolution crops can be marked FACE ID NOT SUITABLE.
 - Face readiness metadata is advisory only and does not perform identity recognition or store face embeddings.
 - Internal staff/student recognition foundation is disabled by default in code and supports `face_recognition` or OpenCV LBPH backends after approved local enrollment. Production currently enables OpenCV LBPH for enrolled test label BURN.

@@ -17,12 +17,22 @@ def _detection_result():
     return {
         "status": "ok",
         "person_detected": True,
-        "detections_count": 1,
+        "detections_count": 3,
         "detections": [
             {
                 "class_name": "person",
                 "confidence": 0.91,
                 "box": {"x1": 10, "y1": 20, "x2": 110, "y2": 220},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.84,
+                "box": {"x1": 140, "y1": 25, "x2": 230, "y2": 210},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.73,
+                "box": {"x1": 260, "y1": 40, "x2": 330, "y2": 205},
             }
         ],
         "confidence_threshold": 0.60,
@@ -92,6 +102,14 @@ class MonitorCompositeEvidenceTests(unittest.TestCase):
 
         self.assertEqual(result["action"], "attention_required")
         self.assertTrue(result["event"]["person_detected"])
+        self.assertEqual(result["event"]["detections_count"], 3)
+        self.assertEqual(len(result["event"]["person_detections"]), 3)
+        self.assertEqual(result["event"]["person_detections"][0]["crop_rank"], 1)
+        self.assertEqual(result["event"]["person_detections"][0]["confidence"], 0.91)
+        self.assertEqual(
+            result["event"]["person_detections"][0]["bbox"],
+            {"x1": 10, "y1": 20, "x2": 110, "y2": 220},
+        )
         self.assertEqual(result["event"]["evidence_path"], "data/evidence/test.jpg")
         self.assertEqual(result["event"]["face_readiness"]["face_readiness"], "not_available")
         save_image.assert_called_once()

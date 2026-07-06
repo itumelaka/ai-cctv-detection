@@ -37,6 +37,12 @@ class _Frame:
     def __init__(self, width, height):
         self.shape = (height, width, 3)
 
+    def __getitem__(self, _key):
+        return self
+
+    def __setitem__(self, _key, _value):
+        pass
+
 
 class DetectionCameraConfigTests(unittest.TestCase):
     def test_camera_person_threshold_overrides_global_default(self):
@@ -188,7 +194,7 @@ class DetectionCameraConfigTests(unittest.TestCase):
             detection._crop_detection = lambda frame, _detection: frame
             detection.assess_face_readiness = lambda _image: {"face_readiness": "not_available"}
             detection._build_person_evidence_frame = (
-                lambda frame, detections, face_readiness=None, face_recognition=None: captured.update(
+                lambda frame, detections, face_readiness=None, face_recognition=None, confidence_threshold=None: captured.update(
                     {"frame": frame, "detections": detections}
                 ) or frame
             )
@@ -210,6 +216,79 @@ class DetectionCameraConfigTests(unittest.TestCase):
             {"x1": 500, "y1": 300, "x2": 900, "y2": 980},
         )
         self.assertEqual(captured["frame"].shape, (1080, 1920, 3))
+
+    def test_person_crop_panel_shows_top_three_people_by_confidence(self):
+        detections = [
+            {
+                "class_name": "person",
+                "confidence": 0.71,
+                "box": {"x1": 10, "y1": 10, "x2": 80, "y2": 180},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.93,
+                "box": {"x1": 90, "y1": 10, "x2": 160, "y2": 180},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.84,
+                "box": {"x1": 170, "y1": 10, "x2": 240, "y2": 180},
+            },
+            {
+                "class_name": "person",
+                "confidence": 0.66,
+                "box": {"x1": 250, "y1": 10, "x2": 320, "y2": 180},
+            },
+        ]
+        labels = []
+
+        original_copy_make_border = getattr(detection.cv2, "copyMakeBorder", None)
+        original_put_text = getattr(detection.cv2, "putText", None)
+        original_line = getattr(detection.cv2, "line", None)
+        original_crop = detection._crop_detection
+        original_resize = detection._resize_into_panel
+
+        try:
+            detection.cv2.BORDER_CONSTANT = 0
+            detection.cv2.copyMakeBorder = lambda *_args, **_kwargs: _Frame(width=320, height=360)
+            detection.cv2.putText = lambda _panel, text, *_args, **_kwargs: labels.append(text)
+            detection.cv2.line = lambda *_args, **_kwargs: None
+            detection._crop_detection = lambda _frame, _detection: _Frame(width=60, height=120)
+            detection._resize_into_panel = lambda _image, _width, panel_height: _Frame(
+                width=60,
+                height=panel_height,
+            )
+
+            panel = detection._build_person_crops_panel(
+                _Frame(width=640, height=360),
+                detections,
+                confidence_threshold=0.60,
+            )
+        finally:
+            if original_copy_make_border is None:
+                delattr(detection.cv2, "copyMakeBorder")
+            else:
+                detection.cv2.copyMakeBorder = original_copy_make_border
+            if original_put_text is None:
+                delattr(detection.cv2, "putText")
+            else:
+                detection.cv2.putText = original_put_text
+            if original_line is None:
+                delattr(detection.cv2, "line")
+            else:
+                detection.cv2.line = original_line
+            detection._crop_detection = original_crop
+            detection._resize_into_panel = original_resize
+
+        self.assertEqual(panel.shape, (360, 320, 3))
+        self.assertIn("PERSON 1", labels)
+        self.assertIn("PERSON 2", labels)
+        self.assertIn("PERSON 3", labels)
+        self.assertNotIn("PERSON 4", labels)
+        self.assertIn("CONF 0.93 / THR 0.60", labels)
+        self.assertIn("CONF 0.84 / THR 0.60", labels)
+        self.assertIn("CONF 0.71 / THR 0.60", labels)
+        self.assertNotIn("CONF 0.66 / THR 0.60", labels)
 
     def test_face_readiness_returns_not_available_when_cascade_missing(self):
         original_data = getattr(detection.cv2, "data", None)

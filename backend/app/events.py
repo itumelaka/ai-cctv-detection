@@ -56,6 +56,23 @@ def _is_person_event_in_cooldown(camera_id: str, current_time: datetime) -> bool
     return False
 
 
+def _ranked_person_detections(detections: list[dict]) -> list[dict]:
+    ranked = sorted(
+        detections,
+        key=lambda detection: detection.get("confidence", 0),
+        reverse=True,
+    )
+
+    return [
+        {
+            "bbox": detection.get("box"),
+            "confidence": detection.get("confidence"),
+            "crop_rank": index,
+        }
+        for index, detection in enumerate(ranked, start=1)
+    ]
+
+
 def _build_person_event(
     detection_result: dict,
     snapshot_func,
@@ -82,9 +99,12 @@ def _build_person_event(
         cooldown_active = _is_person_event_in_cooldown(camera_id, current_time)
 
         if cooldown_active:
-            message = "Person detected in CCTV frame. Evidence snapshot skipped due to cooldown."
+            message = (
+                f"Person detected in CCTV frame ({detections_count} detection(s)). "
+                "Evidence snapshot skipped due to cooldown."
+            )
         else:
-            message = "Person detected in CCTV frame."
+            message = f"Person detected in CCTV frame ({detections_count} detection(s))."
             try:
                 if detection_frame is None:
                     raise RuntimeError("Detection frame unavailable for composite evidence.")
@@ -133,6 +153,7 @@ def _build_person_event(
         "person_detected": person_detected,
         "detections_count": detections_count,
         "detections": detection_result["detections"],
+        "person_detections": _ranked_person_detections(detection_result["detections"]),
         "confidence_threshold": detection_result.get("confidence_threshold"),
         "evidence_path": evidence_path,
         "face_readiness": face_readiness,

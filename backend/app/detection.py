@@ -16,6 +16,7 @@ MODEL_NAME = "yolov8n.pt"
 PERSON_CLASS_NAME = "person"
 PERSON_CROP_PADDING_PX = 32
 PERSON_CROP_PANEL_MIN_WIDTH = 320
+PERSON_CROP_PANEL_MAX_CROPS = 3
 FACE_READY_MIN_FRAME_HEIGHT_PX = 720
 FACE_READY_MIN_PERSON_BOX_WIDTH_PX = 120
 FACE_READY_MIN_PERSON_BOX_HEIGHT_PX = 220
@@ -348,6 +349,14 @@ def _highest_confidence_detection(detections):
     )
 
 
+def _top_confidence_detections(detections, limit: int = PERSON_CROP_PANEL_MAX_CROPS):
+    return sorted(
+        detections,
+        key=lambda detection: detection.get("confidence", 0),
+        reverse=True,
+    )[:limit]
+
+
 def _crop_detection(frame, detection, padding: int = PERSON_CROP_PADDING_PX):
     height, width = frame.shape[:2]
     box = detection["box"]
@@ -581,9 +590,52 @@ def _resize_into_panel(image, panel_width: int, panel_height: int):
     )
 
 
-def _build_person_crop_panel(frame, detection, face_readiness: dict | None = None):
+def _draw_person_crop_label(
+    panel,
+    *,
+    rank: int,
+    detection: dict,
+    y_offset: int,
+    confidence_threshold: float | None = None,
+) -> None:
+    confidence = detection.get("confidence")
+    confidence_text = (
+        f"CONF {float(confidence):.2f}"
+        if isinstance(confidence, (int, float))
+        else "CONF N/A"
+    )
+
+    if confidence_threshold is not None:
+        confidence_text += f" / THR {float(confidence_threshold):.2f}"
+
+    cv2.putText(
+        panel,
+        f"PERSON {rank}",
+        (12, y_offset + 20),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.55,
+        (255, 255, 255),
+        2,
+    )
+    cv2.putText(
+        panel,
+        confidence_text,
+        (12, y_offset + 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.45,
+        (210, 230, 255),
+        1,
+    )
+
+
+def _build_person_crops_panel(
+    frame,
+    detections,
+    face_readiness: dict | None = None,
+    confidence_threshold: float | None = None,
+):
     height, width = frame.shape[:2]
-    label_height = 34
+    label_height = 48
     warning_height = 46
     panel_width = max(PERSON_CROP_PANEL_MIN_WIDTH, min(width, height))
     panel = cv2.copyMakeBorder(
@@ -597,34 +649,58 @@ def _build_person_crop_panel(frame, detection, face_readiness: dict | None = Non
     )
     panel[:, :] = (12, 18, 26)
 
-    crop = _crop_detection(frame, detection)
+    top_detections = _top_confidence_detections(detections)
 
-    if crop is None:
+    if not top_detections:
         return panel
 
-    available_height = max(1, height - label_height - warning_height)
-    resized_crop = _resize_into_panel(crop, panel_width, available_height)
+    single_person = len(top_detections) == 1
+    slot_count = len(top_detections)
+    slot_height = max(1, height // slot_count)
 
-    if resized_crop is None:
+    for index, detection in enumerate(top_detections):
+        slot_y = index * slot_height
+        slot_bottom = height if index == slot_count - 1 else min(height, slot_y + slot_height)
+        slot_available_height = max(1, slot_bottom - slot_y)
+        footer_height = warning_height if single_person else 8
+        crop_area_height = max(1, slot_available_height - label_height - footer_height)
+        crop = _crop_detection(frame, detection)
+
+        _draw_person_crop_label(
+            panel,
+            rank=index + 1,
+            detection=detection,
+            y_offset=slot_y,
+            confidence_threshold=confidence_threshold,
+        )
+
+        if crop is None:
+            continue
+
+        resized_crop = _resize_into_panel(crop, panel_width, crop_area_height)
+
+        if resized_crop is None:
+            continue
+
+        crop_height, crop_width = resized_crop.shape[:2]
+        x_offset = max(0, (panel_width - crop_width) // 2)
+        crop_y = slot_y + label_height + max(0, (crop_area_height - crop_height) // 2)
+        panel[crop_y:crop_y + crop_height, x_offset:x_offset + crop_width] = resized_crop
+
+        if not single_person and index < slot_count - 1:
+            cv2.line(
+                panel,
+                (0, slot_bottom - 1),
+                (panel_width, slot_bottom - 1),
+                (45, 58, 74),
+                1,
+            )
+
+    if not single_person:
         return panel
 
-    crop_height, crop_width = resized_crop.shape[:2]
-    x_offset = max(0, (panel_width - crop_width) // 2)
-    y_offset = label_height + max(0, (available_height - crop_height) // 2)
-    panel[y_offset:y_offset + crop_height, x_offset:x_offset + crop_width] = resized_crop
-
-    label = f"PERSON CROP  {detection['confidence']:.2f}"
-    cv2.putText(
-        panel,
-        label,
-        (12, 23),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        (255, 255, 255),
-        2
-    )
-
-    readiness = _face_recognition_readiness(frame, detection)
+    main_detection = top_detections[0]
+    readiness = _face_recognition_readiness(frame, main_detection)
     warning_lines = _face_readiness_warnings(readiness)
     for index, warning in enumerate(reversed(warning_lines)):
         cv2.putText(
@@ -651,11 +727,20 @@ def _build_person_crop_panel(frame, detection, face_readiness: dict | None = Non
     return panel
 
 
+def _build_person_crop_panel(frame, detection, face_readiness: dict | None = None):
+    return _build_person_crops_panel(
+        frame,
+        [detection],
+        face_readiness=face_readiness,
+    )
+
+
 def _build_person_evidence_frame(
     frame,
     detections,
     face_readiness: dict | None = None,
     face_recognition: dict | None = None,
+    confidence_threshold: float | None = None,
 ):
     boxed_frame = _draw_detections(frame.copy(), detections)
     main_detection = _highest_confidence_detection(detections)
@@ -679,10 +764,11 @@ def _build_person_evidence_frame(
         )
 
     try:
-        crop_panel = _build_person_crop_panel(
+        crop_panel = _build_person_crops_panel(
             frame,
-            main_detection,
+            detections,
             face_readiness=face_readiness,
+            confidence_threshold=confidence_threshold,
         )
         return cv2.hconcat([boxed_frame, crop_panel])
     except Exception as error:
@@ -711,23 +797,33 @@ def run_yolo_snapshot_jpeg() -> bytes:
 
 def run_person_snapshot_jpeg() -> bytes:
     frame = capture_frame()
+    confidence = _person_confidence_threshold()
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
-        confidence_threshold=_person_confidence_threshold()
+        confidence_threshold=confidence
     )
-    frame = _build_person_evidence_frame(frame, detections)
+    frame = _build_person_evidence_frame(
+        frame,
+        detections,
+        confidence_threshold=confidence,
+    )
     return _encode_jpeg(frame)
 
 
 def run_person_snapshot_jpeg_for_camera(camera: dict) -> bytes:
     frame = capture_frame_for_camera(camera)
+    confidence = _person_confidence_threshold(camera)
     detections = detect_objects(
         frame,
         class_name_filter=PERSON_CLASS_NAME,
-        confidence_threshold=_person_confidence_threshold(camera)
+        confidence_threshold=confidence
     )
-    frame = _build_person_evidence_frame(frame, detections)
+    frame = _build_person_evidence_frame(
+        frame,
+        detections,
+        confidence_threshold=confidence,
+    )
     return _encode_jpeg(frame)
 
 
@@ -806,6 +902,7 @@ def build_person_evidence_from_detection(
         evidence_detections,
         face_readiness=face_readiness,
         face_recognition=face_recognition,
+        confidence_threshold=detection_result.get("confidence_threshold"),
     )
     return _encode_jpeg(evidence_frame), face_readiness, face_recognition
 
