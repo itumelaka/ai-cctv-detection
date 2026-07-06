@@ -18,9 +18,12 @@
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
 - Fullscreen TV Command Center mode is available at /dashboard-tv.
 - TV mode includes a selectable backend-proxied MJPEG live camera panel; latest evidence is shown separately as historical proof.
+- TV mode uses an iVMS-style single-camera live monitor layout with camera dropdown, HD/Standard toggle, restart stream, snapshot, and fullscreen controls.
 - Direct stream endpoint /dashboard/live/{camera_id}/stream.mjpg is available for one selected camera/viewer at 4 FPS; /dashboard/live/{camera_id}/snapshot.jpg remains as fallback.
 - Live view supports `quality=standard` for the configured camera channel, usually 102, and `quality=hd` for Hikvision main-stream channel 101. Invalid quality values return HTTP 400. HD MJPEG allows a larger 1920px max width, but actual resolution depends on camera main-stream settings and may still be 720p. This is viewing only and does not change AI detection.
+- /dashboard-tv defaults the selected camera stream to HD. Standard remains available if HD is heavy.
 - MJPEG live view has no audio. Audio would require camera audio support plus a future HLS/WebRTC/FFmpeg proxy.
+- There is intentionally no 13-camera simultaneous MJPEG grid.
 - Near-live monitor script scripts/monitor_person_live.py is the primary alerting path on production.
 - Configured live monitor scan interval is 10 seconds; observed full-cycle time is about 30 seconds across 12 enabled cameras.
 - Live monitor writes lightweight health status to backend/data/task-logs/live_monitor_status.json for /dashboard/health.
@@ -257,8 +260,10 @@ Camera list:
 - [x] Add /dashboard-tv fullscreen monitor mode
 - [x] Add selectable live camera snapshot panel to /dashboard-tv
 - [x] Add selectable MJPEG live camera stream to /dashboard-tv
+- [x] Improve /dashboard-tv as iVMS-style single-camera live monitor with HD/Standard toggle
 - [x] Document MJPEG live stream endpoint, snapshot fallback, security, and performance limits
 - [ ] Consider WebRTC or HLS upgrade for better TV stream scaling and lower CPU/network usage
+- [ ] Consider multi-camera grid only after performance testing; avoid 13 simultaneous MJPEG streams for now
 - [ ] Search by camera
 - [ ] Search by date
 - [ ] Search by event type

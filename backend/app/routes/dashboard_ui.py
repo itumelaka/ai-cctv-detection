@@ -2254,7 +2254,7 @@ def dashboard_tv():
 
     .main-grid {
       display: grid;
-      grid-template-columns: minmax(240px, 310px) minmax(0, 1.2fr) minmax(300px, 0.85fr);
+      grid-template-columns: minmax(220px, 290px) minmax(320px, 0.72fr) minmax(540px, 1.55fr);
       gap: 14px;
       min-height: 0;
       min-width: 0;
@@ -2277,7 +2277,7 @@ def dashboard_tv():
     }
 
     .right-stack {
-      grid-template-rows: minmax(0, 1fr) minmax(180px, 0.42fr);
+      grid-template-rows: minmax(0, 1fr) minmax(160px, 0.32fr);
     }
 
     .metric, .panel {
@@ -2407,19 +2407,38 @@ def dashboard_tv():
       font-weight: 800;
     }
 
-    #liveQualitySelector {
-      min-width: 112px;
+    .quality-toggle {
+      display: inline-grid;
+      grid-template-columns: repeat(2, minmax(86px, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(35, 216, 196, 0.35);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .quality-toggle button {
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .quality-toggle button.active {
+      border-color: rgba(35, 216, 196, 0.75);
+      background: rgba(35, 216, 196, 0.22);
     }
 
     .live-frame-wrap {
       position: relative;
       display: grid;
       place-items: center;
-      min-height: 220px;
+      aspect-ratio: 16 / 9;
+      min-height: clamp(320px, 48vh, 680px);
       min-width: 0;
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
-      background: rgba(0,0,0,0.22);
+      background:
+        linear-gradient(135deg, rgba(35, 216, 196, 0.05), transparent 34%),
+        #02050a;
       overflow: hidden;
     }
 
@@ -2443,6 +2462,33 @@ def dashboard_tv():
 
     .live-camera-img.ready {
       display: block;
+    }
+
+    .live-camera-img.reconnecting {
+      opacity: 0.42;
+      filter: saturate(0.8);
+    }
+
+    .live-status-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .live-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 16px rgba(255, 200, 87, 0.38);
+    }
+
+    .live-status-dot.ready {
+      background: var(--ok);
+      box-shadow: 0 0 18px rgba(55, 228, 139, 0.42);
+      animation: pulse 1.8s infinite;
     }
 
     .evidence-link {
@@ -2751,10 +2797,10 @@ def dashboard_tv():
             <div class="panel-label">Live Camera View</div>
             <div class="live-controls">
               <select id="cameraSelector" aria-label="Select live camera"></select>
-              <select id="liveQualitySelector" aria-label="Select live quality">
-                <option value="standard">Standard</option>
-                <option value="hd">HD</option>
-              </select>
+              <div class="quality-toggle" role="group" aria-label="Live stream quality">
+                <button type="button" id="qualityHdButton" data-quality="hd" class="active">HD</button>
+                <button type="button" id="qualityStandardButton" data-quality="standard">Standard</button>
+              </div>
             </div>
           </div>
           <div id="liveCameraInfo" class="metric-detail">Select a camera for live MJPEG view. HD uses more bandwidth/CPU and has no audio.</div>
@@ -2763,8 +2809,12 @@ def dashboard_tv():
             <div id="liveCameraEmpty" class="empty">Live stream waiting for camera selection.</div>
           </div>
           <div class="live-panel-footer">
-            <span id="liveFrameStatus" class="metric-detail">MJPEG live proxy | selected camera only.</span>
-            <button type="button" id="refreshFrameButton">Restart stream</button>
+            <span id="liveFrameStatus" class="metric-detail live-status-line"><span id="liveStatusDot" class="live-status-dot" aria-hidden="true"></span><span id="liveStatusText">MJPEG live proxy | selected camera only.</span></span>
+            <div class="live-controls">
+              <button type="button" id="refreshFrameButton">Restart stream</button>
+              <button type="button" id="snapshotButton">Snapshot</button>
+              <button type="button" id="fullscreenLiveButton">Fullscreen</button>
+            </div>
           </div>
           <div id="healthNotes" class="metric-detail">Loading production health...</div>
         </div>
@@ -2802,7 +2852,7 @@ def dashboard_tv():
     let loading = false;
     let selectedCameraId = "";
     let streamedCameraId = "";
-    let selectedLiveQuality = "standard";
+    let selectedLiveQuality = "hd";
     let latestCamerasData = null;
     let latestEventsData = null;
     let latestHealthData = null;
@@ -2974,8 +3024,9 @@ def dashboard_tv():
       const camera = selectedCamera();
       const selector = el("cameraSelector");
       if (selector && selectedCameraId) selector.value = selectedCameraId;
-      const qualitySelector = el("liveQualitySelector");
-      if (qualitySelector) selectedLiveQuality = qualitySelector.value || "standard";
+      document.querySelectorAll("[data-quality]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.quality === selectedLiveQuality);
+      });
 
       document.querySelectorAll(".camera-card").forEach((card) => {
         card.classList.toggle("selected", card.dataset.cameraId === selectedCameraId);
@@ -2983,45 +3034,85 @@ def dashboard_tv():
 
       if (!camera) {
         el("liveCameraInfo").textContent = "No enabled camera is available for live MJPEG view.";
-        el("liveFrameStatus").textContent = "MJPEG live proxy | selected camera only | no audio.";
+        el("liveStatusText").textContent = "MJPEG live proxy | selected camera only | no audio.";
         return;
       }
 
       const status = cameraHealthStatus(camera);
       const qualityLabel = selectedLiveQuality === "hd" ? "HD / channel 101" : "Standard / configured channel";
-      el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Health: ${status} | Quality: ${qualityLabel}`;
-      el("liveFrameStatus").textContent = "MJPEG live proxy | selected camera only | no audio.";
+      const host = camera.host || camera.ip || camera.camera_host || "-";
+      el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Host: ${host} | Health: ${status} | Quality: ${qualityLabel}`;
+      el("liveStatusText").textContent = "MJPEG live proxy | selected camera only | no audio.";
     }
 
     function restartLiveCameraStream() {
       const camera = selectedCamera();
       const image = el("liveCameraImage");
       const empty = el("liveCameraEmpty");
-      const status = el("liveFrameStatus");
+      const status = el("liveStatusText");
+      const statusDot = el("liveStatusDot");
 
       if (!camera || !cameraIsSelectable(camera)) {
         status.textContent = "Live stream unavailable for the selected camera.";
         image.removeAttribute("src");
-        image.classList.remove("ready");
+        image.classList.remove("ready", "reconnecting");
+        statusDot.classList.remove("ready");
         empty.style.display = "grid";
         empty.textContent = "Live stream unavailable.";
         return;
       }
 
-      selectedLiveQuality = el("liveQualitySelector")?.value || "standard";
+      updateLiveCameraPanel();
       const streamUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/stream.mjpg?quality=${encodeURIComponent(selectedLiveQuality)}&t=${Date.now()}`;
       streamedCameraId = camera.camera_id;
       const qualityLabel = selectedLiveQuality === "hd" ? "HD main stream 101" : "Standard";
       const loadNote = selectedLiveQuality === "hd" ? " | higher bandwidth/CPU" : "";
-      status.textContent = `Stream started: ${new Date().toLocaleTimeString()} | ${qualityLabel} | MJPEG live proxy | selected camera only | no audio${loadNote}.`;
-      empty.style.display = "none";
-      image.classList.add("ready");
+      status.textContent = `Reconnecting... ${qualityLabel} | MJPEG live proxy | selected camera only | no audio${loadNote}.`;
+      statusDot.classList.remove("ready");
+      empty.style.display = "grid";
+      empty.textContent = `Reconnecting ${qualityLabel} stream...`;
+      image.classList.add("reconnecting");
+      image.classList.remove("ready");
+      image.onload = () => {
+        empty.style.display = "none";
+        image.classList.add("ready");
+        image.classList.remove("reconnecting");
+        statusDot.classList.add("ready");
+        status.textContent = `Live: ${new Date().toLocaleTimeString()} | ${qualityLabel} | MJPEG live proxy | selected camera only | no audio${loadNote}.`;
+      };
       image.onerror = () => {
         status.textContent = "Live stream unavailable. Try Standard quality, another camera, or Restart stream.";
+        statusDot.classList.remove("ready");
+        image.classList.remove("ready", "reconnecting");
         empty.style.display = "grid";
         empty.textContent = "Live stream unavailable. Try Standard quality, another camera, or Restart stream.";
       };
       image.src = streamUrl;
+    }
+
+    function openSelectedSnapshot() {
+      const camera = selectedCamera();
+      if (!camera || !cameraIsSelectable(camera)) {
+        el("liveStatusText").textContent = "Snapshot unavailable for the selected camera.";
+        return;
+      }
+
+      const snapshotUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/snapshot.jpg?quality=${encodeURIComponent(selectedLiveQuality)}&t=${Date.now()}`;
+      window.open(snapshotUrl, "_blank", "noopener");
+    }
+
+    async function fullscreenLivePanel() {
+      const livePanel = document.querySelector(".live-camera-panel");
+      if (!document.fullscreenEnabled || !livePanel?.requestFullscreen) {
+        el("liveStatusText").textContent = "Fullscreen is not supported by this browser.";
+        return;
+      }
+
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await livePanel.requestFullscreen();
+      }
     }
 
     function eventTone(event) {
@@ -3235,11 +3326,15 @@ def dashboard_tv():
     el("cameraSelector").addEventListener("change", (event) => {
       selectLiveCamera(event.target.value);
     });
-    el("liveQualitySelector").addEventListener("change", (event) => {
-      selectedLiveQuality = event.target.value || "standard";
-      updateLiveCameraPanel();
-      restartLiveCameraStream();
+    document.querySelectorAll("[data-quality]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedLiveQuality = button.dataset.quality || "hd";
+        updateLiveCameraPanel();
+        restartLiveCameraStream();
+      });
     });
+    el("snapshotButton").addEventListener("click", openSelectedSnapshot);
+    el("fullscreenLiveButton").addEventListener("click", fullscreenLivePanel);
     el("refreshFrameButton").addEventListener("click", restartLiveCameraStream);
     el("refreshButton").addEventListener("click", loadTvDashboard);
     el("fullscreenButton").addEventListener("click", async () => {
@@ -3251,7 +3346,7 @@ def dashboard_tv():
     });
     document.addEventListener("keydown", (event) => {
       if (event.key.toLowerCase() === "r") loadTvDashboard();
-      if (event.key.toLowerCase() === "f") el("fullscreenButton").click();
+      if (event.key.toLowerCase() === "f") fullscreenLivePanel();
     });
     setInterval(() => {
       updateCountdown();

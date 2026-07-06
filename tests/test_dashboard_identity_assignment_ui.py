@@ -27,6 +27,19 @@ class DashboardIdentityAssignmentUiTests(unittest.TestCase):
         self.assertNotIn("batch-enroll", dashboard_ui)
         self.assertNotIn("enroll_lbph_from_csv", dashboard_ui)
 
+    def test_tv_dashboard_contains_hd_first_single_camera_live_controls(self):
+        dashboard_ui = DASHBOARD_UI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn('let selectedLiveQuality = "hd"', dashboard_ui)
+        self.assertIn('id="qualityHdButton"', dashboard_ui)
+        self.assertIn('id="qualityStandardButton"', dashboard_ui)
+        self.assertIn('id="snapshotButton"', dashboard_ui)
+        self.assertIn('id="fullscreenLiveButton"', dashboard_ui)
+        self.assertIn("Reconnecting", dashboard_ui)
+        self.assertIn("snapshot.jpg?quality=", dashboard_ui)
+        self.assertIn("selected camera only", dashboard_ui)
+        self.assertNotIn("13-camera", dashboard_ui)
+
 
 if __name__ == "__main__":
     unittest.main()
