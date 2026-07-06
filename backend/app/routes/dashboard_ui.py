@@ -2427,6 +2427,10 @@ def dashboard_tv():
       background: rgba(35, 216, 196, 0.22);
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     .live-frame-wrap {
       position: relative;
       display: grid;
@@ -2461,6 +2465,18 @@ def dashboard_tv():
     }
 
     .live-camera-img.ready {
+      display: block;
+    }
+
+    .webrtc-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: none;
+      background: #02050a;
+    }
+
+    .webrtc-frame.ready {
       display: block;
     }
 
@@ -2797,19 +2813,24 @@ def dashboard_tv():
             <div class="panel-label">Live Camera View</div>
             <div class="live-controls">
               <select id="cameraSelector" aria-label="Select live camera"></select>
-              <div class="quality-toggle" role="group" aria-label="Live stream quality">
+              <div class="quality-toggle" role="group" aria-label="Live mode">
+                <button type="button" id="modeWebrtcButton" data-live-mode="webrtc" class="active">WebRTC Smooth</button>
+                <button type="button" id="modeMjpegButton" data-live-mode="mjpeg">MJPEG Fallback</button>
+              </div>
+              <div id="mjpegQualityToggle" class="quality-toggle hidden" role="group" aria-label="MJPEG fallback quality">
                 <button type="button" id="qualitySmoothButton" data-quality="standard" class="active">Smooth Live</button>
                 <button type="button" id="qualityHdButton" data-quality="hd">HD Live</button>
               </div>
             </div>
           </div>
-          <div id="liveCameraInfo" class="metric-detail">Select a camera for live MJPEG view. Smooth Live is optimized for display. Snapshot and evidence remain HD when available.</div>
+          <div id="liveCameraInfo" class="metric-detail">Select a camera for WebRTC Smooth view. WebRTC Smooth uses MediaMTX gateway on port 8889. MJPEG Fallback remains available. Snapshot/Evidence remain HD.</div>
           <div class="live-frame-wrap">
+            <iframe id="webrtcFrame" class="webrtc-frame" title="MediaMTX WebRTC live stream" loading="eager" referrerpolicy="no-referrer"></iframe>
             <img id="liveCameraImage" class="live-camera-img" alt="Selected live camera stream">
             <div id="liveCameraEmpty" class="empty">Live stream waiting for camera selection.</div>
           </div>
           <div class="live-panel-footer">
-            <span id="liveFrameStatus" class="metric-detail live-status-line"><span id="liveStatusDot" class="live-status-dot" aria-hidden="true"></span><span id="liveStatusText">MJPEG live proxy | selected camera only.</span></span>
+            <span id="liveFrameStatus" class="metric-detail live-status-line"><span id="liveStatusDot" class="live-status-dot" aria-hidden="true"></span><span id="liveStatusText">WebRTC Smooth | selected camera only | MJPEG Fallback available.</span></span>
             <div class="live-controls">
               <button type="button" id="refreshFrameButton">Restart stream</button>
               <button type="button" id="snapshotButton">Snapshot HD</button>
@@ -2852,6 +2873,8 @@ def dashboard_tv():
     let loading = false;
     let selectedCameraId = "";
     let streamedCameraId = "";
+    let streamedLiveMode = "";
+    let selectedLiveMode = "webrtc";
     let selectedLiveQuality = "standard";
     let latestCamerasData = null;
     let latestEventsData = null;
@@ -3024,28 +3047,100 @@ def dashboard_tv():
       const camera = selectedCamera();
       const selector = el("cameraSelector");
       if (selector && selectedCameraId) selector.value = selectedCameraId;
+      document.querySelectorAll("[data-live-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.liveMode === selectedLiveMode);
+      });
       document.querySelectorAll("[data-quality]").forEach((button) => {
         button.classList.toggle("active", button.dataset.quality === selectedLiveQuality);
       });
+      el("mjpegQualityToggle").classList.toggle("hidden", selectedLiveMode !== "mjpeg");
 
       document.querySelectorAll(".camera-card").forEach((card) => {
         card.classList.toggle("selected", card.dataset.cameraId === selectedCameraId);
       });
 
       if (!camera) {
-        el("liveCameraInfo").textContent = "No enabled camera is available for live MJPEG view.";
-        el("liveStatusText").textContent = "MJPEG live proxy | selected camera only | no audio.";
+        el("liveCameraInfo").textContent = "No enabled camera is available for live view.";
+        el("liveStatusText").textContent = "WebRTC Smooth and MJPEG Fallback are selected-camera only | no audio.";
         return;
       }
 
       const status = cameraHealthStatus(camera);
-      const qualityLabel = selectedLiveQuality === "hd" ? "HD Live / channel 101" : "Smooth Live / standard";
+      const qualityLabel = selectedLiveMode === "webrtc"
+        ? "WebRTC Smooth / MediaMTX 8889"
+        : (selectedLiveQuality === "hd" ? "MJPEG Fallback HD Live / channel 101" : "MJPEG Fallback Smooth Live / standard");
       const host = camera.host || camera.ip || camera.camera_host || "-";
-      el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Host: ${host} | Health: ${status} | Quality: ${qualityLabel}`;
-      el("liveStatusText").textContent = "Live: Smooth by default | Snapshot: HD | Evidence/Crops: HD when available | no audio.";
+      el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Host: ${host} | Health: ${status} | Live Mode: ${qualityLabel}`;
+      el("liveStatusText").textContent = selectedLiveMode === "webrtc"
+        ? "WebRTC Smooth uses MediaMTX gateway on port 8889. If this camera is not configured yet, use MJPEG Fallback. Snapshot/Evidence remain HD."
+        : "Live: MJPEG Fallback | Smooth/HD applies to fallback only | Snapshot: HD | Evidence/Crops: HD when available | no audio.";
+    }
+
+    function mediamtxWebrtcUrl(cameraId) {
+      return `http://${window.location.hostname}:8889/${encodeURIComponent(cameraId)}/`;
     }
 
     function restartLiveCameraStream() {
+      if (selectedLiveMode === "webrtc") {
+        restartWebrtcStream();
+        return;
+      }
+      restartMjpegStream();
+    }
+
+    function clearWebrtcFrame() {
+      const frame = el("webrtcFrame");
+      frame.removeAttribute("src");
+      frame.classList.remove("ready");
+      frame.onload = null;
+    }
+
+    function clearMjpegImage() {
+      const image = el("liveCameraImage");
+      image.removeAttribute("src");
+      image.classList.remove("ready", "reconnecting");
+      image.onload = null;
+      image.onerror = null;
+    }
+
+    function restartWebrtcStream() {
+      const camera = selectedCamera();
+      const frame = el("webrtcFrame");
+      const image = el("liveCameraImage");
+      const empty = el("liveCameraEmpty");
+      const status = el("liveStatusText");
+      const statusDot = el("liveStatusDot");
+
+      if (!camera || !cameraIsSelectable(camera)) {
+        status.textContent = "Live stream unavailable for the selected camera.";
+        clearWebrtcFrame();
+        clearMjpegImage();
+        statusDot.classList.remove("ready");
+        empty.style.display = "grid";
+        empty.textContent = "Live stream unavailable.";
+        return;
+      }
+
+      updateLiveCameraPanel();
+      clearMjpegImage();
+      const streamUrl = `${mediamtxWebrtcUrl(camera.camera_id)}?t=${Date.now()}`;
+      streamedCameraId = camera.camera_id;
+      streamedLiveMode = selectedLiveMode;
+      status.textContent = "Reconnecting... WebRTC Smooth | MediaMTX gateway on port 8889 | selected camera only. If this camera is not configured yet, use MJPEG Fallback.";
+      statusDot.classList.remove("ready");
+      empty.style.display = "grid";
+      empty.textContent = "Connecting WebRTC Smooth stream. WebRTC stream not configured for this camera yet? Use MJPEG Fallback.";
+      frame.classList.remove("ready");
+      frame.onload = () => {
+        empty.style.display = "none";
+        frame.classList.add("ready");
+        statusDot.classList.add("ready");
+        status.textContent = `Live: WebRTC Smooth | ${new Date().toLocaleTimeString()} | MediaMTX 8889 | Snapshot: HD | Evidence/Crops: HD when available | selected camera only | no audio | MJPEG Fallback available if stream path is not configured.`;
+      };
+      frame.src = streamUrl;
+    }
+
+    function restartMjpegStream() {
       const camera = selectedCamera();
       const image = el("liveCameraImage");
       const empty = el("liveCameraEmpty");
@@ -3054,8 +3149,8 @@ def dashboard_tv():
 
       if (!camera || !cameraIsSelectable(camera)) {
         status.textContent = "Live stream unavailable for the selected camera.";
-        image.removeAttribute("src");
-        image.classList.remove("ready", "reconnecting");
+        clearWebrtcFrame();
+        clearMjpegImage();
         statusDot.classList.remove("ready");
         empty.style.display = "grid";
         empty.textContent = "Live stream unavailable.";
@@ -3063,8 +3158,10 @@ def dashboard_tv():
       }
 
       updateLiveCameraPanel();
+      clearWebrtcFrame();
       const streamUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/stream.mjpg?quality=${encodeURIComponent(selectedLiveQuality)}&t=${Date.now()}`;
       streamedCameraId = camera.camera_id;
+      streamedLiveMode = selectedLiveMode;
       const qualityLabel = selectedLiveQuality === "hd" ? "HD Live main stream 101" : "Smooth Live";
       const loadNote = selectedLiveQuality === "hd"
         ? " | higher bandwidth/CPU"
@@ -3308,7 +3405,10 @@ def dashboard_tv():
         renderTimeline(events, map);
         renderCameraSelector(cameras, events, summary);
         await renderCameras(cameras, health);
-        if (!el("liveCameraImage").classList.contains("ready") || streamedCameraId !== selectedCameraId) {
+        const activeStreamReady = selectedLiveMode === "webrtc"
+          ? el("webrtcFrame").classList.contains("ready")
+          : el("liveCameraImage").classList.contains("ready");
+        if (!activeStreamReady || streamedCameraId !== selectedCameraId || streamedLiveMode !== selectedLiveMode) {
           restartLiveCameraStream();
         }
         el("loadStatus").textContent = `Last refreshed ${new Date().toLocaleString()}`;
@@ -3328,11 +3428,18 @@ def dashboard_tv():
     el("cameraSelector").addEventListener("change", (event) => {
       selectLiveCamera(event.target.value);
     });
+    document.querySelectorAll("[data-live-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedLiveMode = button.dataset.liveMode || "webrtc";
+        updateLiveCameraPanel();
+        restartLiveCameraStream();
+      });
+    });
     document.querySelectorAll("[data-quality]").forEach((button) => {
       button.addEventListener("click", () => {
         selectedLiveQuality = button.dataset.quality || "hd";
         updateLiveCameraPanel();
-        restartLiveCameraStream();
+        if (selectedLiveMode === "mjpeg") restartLiveCameraStream();
       });
     });
     el("snapshotButton").addEventListener("click", openSelectedSnapshot);

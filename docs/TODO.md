@@ -17,14 +17,15 @@
 - Internal staff/student recognition foundation is disabled by default in code and supports `face_recognition` or OpenCV LBPH backends after approved local enrollment.
 - Dashboard is now the dark AI Command Center served by backend /dashboard-ui.
 - Fullscreen TV Command Center mode is available at /dashboard-tv.
-- TV mode includes a selectable backend-proxied MJPEG live camera panel; latest evidence is shown separately as historical proof.
-- TV mode uses an iVMS-style single-camera live monitor layout with camera dropdown, Smooth Live/HD Live toggle, restart stream, HD snapshot, and fullscreen controls.
+- TV mode includes a selectable single-camera live panel; latest evidence is shown separately as historical proof.
+- TV mode uses an iVMS-style single-camera live monitor layout with camera dropdown, WebRTC Smooth/MJPEG Fallback toggle, MJPEG Smooth Live/HD Live toggle, restart stream, HD snapshot, and fullscreen controls.
+- WebRTC Smooth uses the MediaMTX gateway on port 8889. MediaMTX path names should match dashboard `camera_id` values, and RTSP credentials are not exposed to the browser.
 - Direct stream endpoint /dashboard/live/{camera_id}/stream.mjpg is available for one selected camera/viewer at 4 FPS; /dashboard/live/{camera_id}/snapshot.jpg remains as fallback.
 - Live view supports `quality=standard` for the configured camera channel, usually 102, and `quality=hd` for Hikvision main-stream channel 101. Invalid quality values return HTTP 400. HD MJPEG allows a larger 1920px max width, but actual resolution depends on camera main-stream settings and may still be 720p. This is viewing only and does not change AI detection.
-- /dashboard-tv defaults the selected camera stream to Smooth Live/Standard for better TV performance. HD Live remains available if detail is needed.
-- Snapshot prefers HD even when live display is Smooth. Evidence crops use the separate HD evidence pipeline when available.
-- MJPEG live view has no audio. Audio would require camera audio support plus a future HLS/WebRTC/FFmpeg proxy.
-- There is intentionally no 13-camera simultaneous MJPEG grid.
+- /dashboard-tv defaults the selected camera stream to WebRTC Smooth for better TV performance. MJPEG Fallback remains available, with Smooth Live/Standard as its default and HD Live available if detail is needed.
+- Snapshot prefers HD even when live display is WebRTC Smooth or MJPEG Smooth. Evidence crops use the separate HD evidence pipeline when available.
+- Dashboard live view has no audio. Audio would require camera audio support plus future WebRTC/MediaMTX handling.
+- There is intentionally no 13-camera simultaneous live grid.
 - Near-live monitor script scripts/monitor_person_live.py is the primary alerting path on production.
 - Configured live monitor scan interval is 10 seconds; observed full-cycle time is about 30 seconds across 12 enabled cameras.
 - Live monitor writes lightweight health status to backend/data/task-logs/live_monitor_status.json for /dashboard/health.
@@ -49,6 +50,7 @@
 - [x] Metadata sync for multi-person evidence
 - [x] HD evidence scaled-bbox fallback after failed HD re-detection
 - [x] Live monitor health status support
+- [x] MediaMTX WebRTC Smooth mode integration for /dashboard-tv
 
 ## Current Production Backlog
 
@@ -66,8 +68,10 @@
 - [ ] Add daily Telegram summary report to the internal group.
 - [ ] Design optional critical-only Telegram health alert cooldowns for live monitor stopped, failed cameras, and stale cameras. Do not spam normal health status.
 - [ ] Add camera health alert if live monitor failed count increases or a camera freezes.
-- [ ] Review HD live-view CPU/network impact before encouraging routine HD monitoring.
-- [ ] Add future audio-capable live view with HLS/WebRTC/FFmpeg only if cameras provide audio streams.
+- [ ] Add remaining camera paths to MediaMTX for WebRTC Smooth.
+- [ ] Run MediaMTX as a Windows service after production paths are finalized.
+- [ ] Review HD MJPEG fallback CPU/network impact before encouraging routine HD monitoring.
+- [ ] Add future audio-capable live view only if cameras provide audio streams.
 - [ ] Add visual ignore-zone polygon editor for reviewed dashboard snapshots.
 - [x] Add CSV-based private face enrollment workflow.
 - [ ] Add review audit logs and retention/deletion policy.

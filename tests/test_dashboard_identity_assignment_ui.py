@@ -27,10 +27,18 @@ class DashboardIdentityAssignmentUiTests(unittest.TestCase):
         self.assertNotIn("batch-enroll", dashboard_ui)
         self.assertNotIn("enroll_lbph_from_csv", dashboard_ui)
 
-    def test_tv_dashboard_contains_smooth_live_and_hd_snapshot_controls(self):
+    def test_tv_dashboard_contains_webrtc_smooth_mjpeg_fallback_and_hd_snapshot_controls(self):
         dashboard_ui = DASHBOARD_UI_PATH.read_text(encoding="utf-8")
 
+        self.assertIn('let selectedLiveMode = "webrtc"', dashboard_ui)
         self.assertIn('let selectedLiveQuality = "standard"', dashboard_ui)
+        self.assertIn('id="modeWebrtcButton"', dashboard_ui)
+        self.assertIn('id="modeMjpegButton"', dashboard_ui)
+        self.assertIn("WebRTC Smooth", dashboard_ui)
+        self.assertIn("MJPEG Fallback", dashboard_ui)
+        self.assertIn("mediamtxWebrtcUrl(camera.camera_id)", dashboard_ui)
+        self.assertIn("window.location.hostname", dashboard_ui)
+        self.assertIn(":8889", dashboard_ui)
         self.assertIn('id="qualitySmoothButton"', dashboard_ui)
         self.assertIn('id="qualityHdButton"', dashboard_ui)
         self.assertIn("Smooth Live", dashboard_ui)
@@ -43,6 +51,10 @@ class DashboardIdentityAssignmentUiTests(unittest.TestCase):
         self.assertIn("Evidence/Crops: HD when available", dashboard_ui)
         self.assertIn("selected camera only", dashboard_ui)
         self.assertNotIn("13-camera", dashboard_ui)
+        self.assertNotIn("rtsp" + "://", dashboard_ui)
+        self.assertNotIn("CCTV" + "_PASSWORD", dashboard_ui)
+        self.assertNotIn("TELEGRAM" + "_BOT_TOKEN", dashboard_ui)
+        self.assertNotIn("http://192.168.1.254:8889", dashboard_ui)
 
 
 if __name__ == "__main__":
