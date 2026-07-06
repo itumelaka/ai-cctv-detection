@@ -19,26 +19,26 @@ Missing `quality` defaults to `standard`.
 
 Invalid `quality` values return HTTP 400.
 
-The TV dashboard defaults its selected live stream to HD and provides an HD / Standard toggle. Changing camera or quality restarts the MJPEG stream with a cache-busting query parameter and shows a reconnecting state.
+The TV dashboard defaults its selected live stream to Smooth Live, which uses the existing Standard endpoint for better TV performance. It provides a Smooth Live / HD Live toggle. Changing camera or quality restarts the MJPEG stream with a cache-busting query parameter and shows a reconnecting state.
 
 ## Quality Modes
 
-- `standard`: uses the configured camera channel, usually Hikvision sub-stream `102`.
-- `hd`: uses Hikvision channel `101`.
+- `standard`: used by Smooth Live. It uses the configured camera channel, usually Hikvision sub-stream `102`.
+- `hd`: used by HD Live and HD snapshots. It uses Hikvision channel `101`.
 
 HD snapshot can preserve full source resolution where the camera provides it. A production test on `block_f_cam_7` confirmed an HD snapshot at 3200x1800. Actual resolution still depends on the camera main-stream settings and may be lower.
 
-MJPEG live stream output is capped for browser performance. HD allows a larger max width than Standard, but it is still intended for one selected camera/viewer, not all cameras at once. Use Standard if HD is heavy for the TV, network, or camera.
+MJPEG live stream output is capped for browser performance. Smooth Live is optimized for display. HD Live remains available for detail viewing, but can be heavier for the TV, network, or camera. HD snapshots and evidence crops use the HD evidence/snapshot paths separately from the smooth live display.
 
 ## TV Controls
 
 The TV live monitor includes:
 
 - selected camera dropdown
-- HD / Standard quality toggle
+- Smooth Live / HD Live quality toggle
 - camera name, camera ID, safe host metadata, selected quality, and live status
 - restart stream button
-- snapshot button using the selected quality
+- snapshot button that defaults to HD even when live display is Smooth
 - fullscreen button when supported by the browser
 
 ## Audio

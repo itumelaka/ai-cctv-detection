@@ -2798,12 +2798,12 @@ def dashboard_tv():
             <div class="live-controls">
               <select id="cameraSelector" aria-label="Select live camera"></select>
               <div class="quality-toggle" role="group" aria-label="Live stream quality">
-                <button type="button" id="qualityHdButton" data-quality="hd" class="active">HD</button>
-                <button type="button" id="qualityStandardButton" data-quality="standard">Standard</button>
+                <button type="button" id="qualitySmoothButton" data-quality="standard" class="active">Smooth Live</button>
+                <button type="button" id="qualityHdButton" data-quality="hd">HD Live</button>
               </div>
             </div>
           </div>
-          <div id="liveCameraInfo" class="metric-detail">Select a camera for live MJPEG view. HD uses more bandwidth/CPU and has no audio.</div>
+          <div id="liveCameraInfo" class="metric-detail">Select a camera for live MJPEG view. Smooth Live is optimized for display. Snapshot and evidence remain HD when available.</div>
           <div class="live-frame-wrap">
             <img id="liveCameraImage" class="live-camera-img" alt="Selected live camera stream">
             <div id="liveCameraEmpty" class="empty">Live stream waiting for camera selection.</div>
@@ -2812,7 +2812,7 @@ def dashboard_tv():
             <span id="liveFrameStatus" class="metric-detail live-status-line"><span id="liveStatusDot" class="live-status-dot" aria-hidden="true"></span><span id="liveStatusText">MJPEG live proxy | selected camera only.</span></span>
             <div class="live-controls">
               <button type="button" id="refreshFrameButton">Restart stream</button>
-              <button type="button" id="snapshotButton">Snapshot</button>
+              <button type="button" id="snapshotButton">Snapshot HD</button>
               <button type="button" id="fullscreenLiveButton">Fullscreen</button>
             </div>
           </div>
@@ -2852,7 +2852,7 @@ def dashboard_tv():
     let loading = false;
     let selectedCameraId = "";
     let streamedCameraId = "";
-    let selectedLiveQuality = "hd";
+    let selectedLiveQuality = "standard";
     let latestCamerasData = null;
     let latestEventsData = null;
     let latestHealthData = null;
@@ -3039,10 +3039,10 @@ def dashboard_tv():
       }
 
       const status = cameraHealthStatus(camera);
-      const qualityLabel = selectedLiveQuality === "hd" ? "HD / channel 101" : "Standard / configured channel";
+      const qualityLabel = selectedLiveQuality === "hd" ? "HD Live / channel 101" : "Smooth Live / standard";
       const host = camera.host || camera.ip || camera.camera_host || "-";
       el("liveCameraInfo").textContent = `${cameraDisplayName(camera)} | ID: ${camera.camera_id} | Host: ${host} | Health: ${status} | Quality: ${qualityLabel}`;
-      el("liveStatusText").textContent = "MJPEG live proxy | selected camera only | no audio.";
+      el("liveStatusText").textContent = "Live: Smooth by default | Snapshot: HD | Evidence/Crops: HD when available | no audio.";
     }
 
     function restartLiveCameraStream() {
@@ -3065,8 +3065,10 @@ def dashboard_tv():
       updateLiveCameraPanel();
       const streamUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/stream.mjpg?quality=${encodeURIComponent(selectedLiveQuality)}&t=${Date.now()}`;
       streamedCameraId = camera.camera_id;
-      const qualityLabel = selectedLiveQuality === "hd" ? "HD main stream 101" : "Standard";
-      const loadNote = selectedLiveQuality === "hd" ? " | higher bandwidth/CPU" : "";
+      const qualityLabel = selectedLiveQuality === "hd" ? "HD Live main stream 101" : "Smooth Live";
+      const loadNote = selectedLiveQuality === "hd"
+        ? " | higher bandwidth/CPU"
+        : " | optimized for display; snapshot/evidence remain HD";
       status.textContent = `Reconnecting... ${qualityLabel} | MJPEG live proxy | selected camera only | no audio${loadNote}.`;
       statusDot.classList.remove("ready");
       empty.style.display = "grid";
@@ -3078,7 +3080,7 @@ def dashboard_tv():
         image.classList.add("ready");
         image.classList.remove("reconnecting");
         statusDot.classList.add("ready");
-        status.textContent = `Live: ${new Date().toLocaleTimeString()} | ${qualityLabel} | MJPEG live proxy | selected camera only | no audio${loadNote}.`;
+        status.textContent = `Live: ${selectedLiveQuality === "hd" ? "HD" : "Smooth"} | ${new Date().toLocaleTimeString()} | Snapshot: HD | Evidence/Crops: HD when available | selected camera only | no audio${loadNote}.`;
       };
       image.onerror = () => {
         status.textContent = "Live stream unavailable. Try Standard quality, another camera, or Restart stream.";
@@ -3097,7 +3099,7 @@ def dashboard_tv():
         return;
       }
 
-      const snapshotUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/snapshot.jpg?quality=${encodeURIComponent(selectedLiveQuality)}&t=${Date.now()}`;
+      const snapshotUrl = `${endpoints.liveStream}/${encodeURIComponent(camera.camera_id)}/snapshot.jpg?quality=hd&t=${Date.now()}`;
       window.open(snapshotUrl, "_blank", "noopener");
     }
 
