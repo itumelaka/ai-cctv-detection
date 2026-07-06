@@ -20,6 +20,8 @@ For public project overview, use the root `README.md`. Detailed operator notes a
 - Primary monitor task: `ITU AI CCTV Live Monitor`, confirmed `Running`
 - Old batch monitor task: `ITU AI CCTV Person Monitor`, confirmed `Disabled` and retained as backup
 - Live monitor command: `C:\ituaicctv\.venv312\Scripts\python.exe C:\ituaicctv\scripts\monitor_person_live.py`
+- Live monitor status file: `backend/data/task-logs/live_monitor_status.json`
+- `/dashboard/health` prefers `live_monitor_status.json` and falls back to the old `monitor_person_all.log` for backward compatibility.
 - Live monitor scans enabled cameras sequentially. Configured interval is 10 seconds, with real observed full-cycle time around 30 seconds for 12 enabled cameras.
 - Latest observed live monitor summary: `enabled=12 attention=0 failed=0 next_scan=10s`
 - Total known cameras: 13
@@ -48,11 +50,15 @@ person_detected_<camera_id>_<timestamp>.jpg
 For new detections, the evidence image is a clearer composite:
 
 - full CCTV frame with bounding boxes
-- zoomed crop of the highest-confidence person
-- crop label with class and confidence
+- up to three right-panel person crops ordered by confidence
+- crop labels such as `PERSON 1`, confidence, and active threshold where useful
+- metadata in new event JSON synced to the rendered crops through `person_detections`
+- `person_detections` includes `crop_rank`, `confidence`, and `bbox`
 - fallback to boxed full-frame evidence if composite generation fails
 
 Telegram sends the saved evidence image, so new alerts use the clearer composite image automatically.
+
+Existing old events are not migrated. New events after deployment include synced multi-person evidence metadata. If YOLO detects only one person in a crowded or overlapping scene, the dashboard can only assign the detected `PERSON 1`; future tuning may require a stronger local model or tracker for selected cameras.
 
 ## False Positive Review and Ignore Zones
 
@@ -170,9 +176,28 @@ GET /dashboard-tv
 ```
 GET /faces/enrollment/template
 POST /faces/enrollment/identity-assignment
+GET /faces/enrollment/identity-assignments
 ```
 
-Face enrollment helpers are local-only. They expose template and validation metadata only; they do not upload face images or call cloud recognition services.
+Face enrollment helpers are local-only. They expose template, assignment, and readback metadata only; they do not upload face images, call paid APIs, or call cloud recognition services.
+
+Local CLI helpers:
+
+```powershell
+python scripts\manage_face_enrollment.py template --output private-face-enrollment-template.csv
+python scripts\manage_face_enrollment.py draft --source-dir C:\private\approved-face-reference --output C:\private\face-enrollment-draft.csv
+python scripts\manage_face_enrollment.py batch-enroll --csv C:\private\face-enrollment-reviewed.csv --reject-report C:\private\face-enrollment-reject-report.json
+```
+
+Private runtime storage:
+
+```text
+backend/data/face-enrollment/
+backend/data/face-enrollment/identity-assignments/identity_assignments.json
+backend/data/face-embeddings/
+```
+
+Do not commit enrollment CSVs, crops, assignments, face images, embeddings, recognition models, evidence, logs, `.env`, `.venv`, or `.venv312`.
 
 Full HTML dashboard served directly by the backend. Auto-refreshes every 30 seconds. Loads data from all dashboard endpoints.
 
@@ -262,8 +287,12 @@ backend/
   data/
     events.jsonl
     evidence/
+    face-enrollment/
+      identity-assignments/
+    face-embeddings/
     task-logs/
       monitor_person_all.log
+      live_monitor_status.json
   .env.example
   requirements.txt
   README.md

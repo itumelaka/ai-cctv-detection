@@ -1,6 +1,8 @@
 # ITU AI CCTV - Live View
 
-The dashboard live view is a backend MJPEG proxy for one selected camera at a time. It is for viewing only and does not run YOLO, save evidence, write event logs, send Telegram alerts, change event review, change ignore zones, or affect the live monitor loop.
+The dashboard live view is a backend MJPEG proxy for one selected camera at a time. It is for viewing only and does not run YOLO, save evidence, write event logs, send Telegram alerts, change event review, change identity assignment, change ignore zones, or affect the live monitor loop.
+
+Assign Identity and multi-person targets come from saved event metadata, not from live-view pixels.
 
 ## Endpoints
 

@@ -25,6 +25,23 @@
 - Configured live monitor scan interval is 10 seconds; observed full-cycle time is about 30 seconds across 12 enabled cameras.
 - Live monitor writes lightweight health status to backend/data/task-logs/live_monitor_status.json for /dashboard/health.
 - Existing 5-minute Task Scheduler scan is Disabled and remains as backup.
+- /dashboard/health now prefers live monitor status JSON and falls back to the old batch monitor log.
+- Dashboard Assign Identity is available for unknown/unrecognized evidence events.
+- Multi-person events require selecting the matching `PERSON 1`, `PERSON 2`, or `PERSON 3` metadata target before saving identity assignment.
+- Identity assignments persist under backend/data/face-enrollment/identity-assignments/identity_assignments.json.
+- Assignments are human review records only and do not auto-train the face model.
+- New multi-person evidence metadata is synced to the rendered evidence crops.
+
+## Recently Completed Production Work
+
+- [x] Local Face Enrollment Manager groundwork
+- [x] CSV enrollment workflow: template, draft, batch enrollment, and reject report
+- [x] Dashboard identity assignment UI
+- [x] Person-specific identity assignment
+- [x] Persistent identity assignment storage path fix
+- [x] Multi-person evidence composite
+- [x] Metadata sync for multi-person evidence
+- [x] Live monitor health status support
 
 ## Current Production Backlog
 
@@ -40,13 +57,20 @@
 - [ ] Improve dashboard review workflow with filters for unreviewed only, false positive only, and follow-up only.
 - [ ] Add review audit log and authenticated users before treating review actions as controlled approvals.
 - [ ] Add daily Telegram summary report to the internal group.
-- [ ] Design Telegram health alert cooldowns for live monitor stopped, failed cameras, and stale cameras.
+- [ ] Design optional critical-only Telegram health alert cooldowns for live monitor stopped, failed cameras, and stale cameras. Do not spam normal health status.
 - [ ] Add camera health alert if live monitor failed count increases or a camera freezes.
 - [ ] Review HD live-view CPU/network impact before encouraging routine HD monitoring.
 - [ ] Add future audio-capable live view with HLS/WebRTC/FFmpeg only if cameras provide audio streams.
 - [ ] Add visual ignore-zone polygon editor for reviewed dashboard snapshots.
-- [ ] Add CSV-based private face enrollment mapping, review audit logs, and retention/deletion policy.
+- [x] Add CSV-based private face enrollment workflow.
+- [ ] Add review audit logs and retention/deletion policy.
 - [ ] Keep evaluating internal LBPH recognition with approved private samples; do not treat matches as high-security identity proof.
+- [ ] Add approved assignment-to-training-sample workflow with manual review.
+- [ ] Add cleanup/manage identity assignment records UI.
+- [ ] Add per-camera crowd/wide-view tuning.
+- [ ] Evaluate stronger local model for selected cameras.
+- [ ] Add tracking/counting line/zone with ByteTrack or BoT-SORT.
+- [ ] Evaluate local deep face embedding backend.
 - [ ] Add polygon zone intrusion detection per camera.
 - [ ] Add restricted zone alerts.
 - [ ] Add line crossing detection with direction.

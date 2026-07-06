@@ -17,6 +17,7 @@ Operational foundation:
 - Backend service `ITUAICCTVBackend` is Running and Automatic.
 - Primary alerting task `ITU AI CCTV Live Monitor` is Running as a startup-triggered long-running Windows Task Scheduler task.
 - Old 5-minute scheduler task `ITU AI CCTV Person Monitor` is Disabled and retained only as backup.
+- Live monitor writes `backend/data/task-logs/live_monitor_status.json`, and `/dashboard/health` prefers this status file with fallback to the old batch monitor log.
 - Camera registry has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera.
 - One camera remains disabled/offline: `block_f_cam_8 / ITU BLOCK F CAM8`.
 - Newly confirmed enabled cameras: `kuarantin_cam_11` / `192.168.40.23`, `biosekuriti_cam_12` / `192.168.40.24`, and `makmal_cam_13` / `192.168.40.25`.
@@ -36,6 +37,19 @@ Operational foundation:
 - Event review / acknowledgement is deployed and verified through API endpoints and `/dashboard-ui` buttons, but it remains an internal local workflow with no user login/authentication yet.
 - Ignore-zone polygon support is deployed. Current kuarantin_cam_11 and makmal_cam_13 placeholders remain disabled until accurate coordinates are calibrated.
 
+Recent completed production work:
+
+- Local-only Face Enrollment Manager groundwork.
+- Private CSV template, draft, batch enrollment, and reject report workflow.
+- Dashboard Assign Identity action for unknown/unrecognized evidence events.
+- Person-specific identity assignment for multi-person events.
+- Persistent local identity assignment storage path fix.
+- Multi-person evidence composite with up to three top-confidence crops.
+- Synced multi-person event metadata for evidence crops.
+- Live monitor status JSON and `/dashboard/health` live monitor support.
+
+Current privacy principle: face enrollment stays local-only, uses no paid API, performs no cloud recognition, and does not upload staff/student images externally. Dashboard assignments are human review records only until a future approved-training workflow exists.
+
 ## Forward Backlog
 
 1. Person detection reliability: per-camera thresholds, minimum bounding box size, calibrated ignore-zone/polygon masks for known static false positives such as trees, topiary, or fixed pipes, and better dashboard review metrics.
@@ -50,15 +64,19 @@ Operational foundation:
 10. After-hours detection.
 11. Improve fullscreen command center / TV mode after real TV review.
 12. WebRTC/HLS/media-server upgrade for better live-view scaling if multiple viewers or cameras need streaming.
-13. Harden the live monitor operation with clearer status reporting, overlap protection, CPU/network observation before lowering scan intervals, and camera-health alerts if failed counts increase.
-14. Face detection and safe opt-in face recognition roadmap, including high-resolution evidence capture before any identity pilot.
-15. Optional Telegram send-as-document evidence delivery to reduce Telegram photo compression.
-16. CSV-based private face enrollment mapping for staff/student sources, without hardcoding source folders in application code.
-17. Calibrate and enable ignore-zone polygons only after screenshot/evidence review confirms coordinates.
-18. Add daily Telegram summary report to the internal monitoring group.
-19. Add audio-capable live view only if camera microphone/audio streams are available, likely through HLS/WebRTC/FFmpeg rather than MJPEG.
-20. Add visual ignore-zone editor for calibrated polygon setup.
-21. Add private CSV enrollment mapping, face-recognition audit logs, and retention/deletion policy.
+13. Harden the live monitor operation with overlap protection, CPU/network observation before lowering scan intervals, and optional critical-only Telegram health alerts with cooldown.
+14. Approved assignment-to-training-sample workflow with manual review before any model update.
+15. Cleanup/manage identity assignment records UI.
+16. Per-camera crowd/wide-view tuning.
+17. Selected-camera stronger local model evaluation.
+18. Tracking/counting with ByteTrack or BoT-SORT.
+19. Local deep face embedding backend evaluation.
+20. Optional Telegram send-as-document evidence delivery to reduce Telegram photo compression.
+21. Calibrate and enable ignore-zone polygons only after screenshot/evidence review confirms coordinates.
+22. Add daily Telegram summary report to the internal monitoring group.
+23. Add audio-capable live view only if camera microphone/audio streams are available, likely through HLS/WebRTC/FFmpeg rather than MJPEG.
+24. Add visual ignore-zone editor for calibrated polygon setup.
+25. Add face-recognition audit logs and retention/deletion policy.
 
 ## Current Checkpoint
 

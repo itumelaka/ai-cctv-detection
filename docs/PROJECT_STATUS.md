@@ -15,6 +15,20 @@ Repository:
 - TV command center includes a Normal dashboard link back to /dashboard-ui.
 - GitHub Pages is no longer the primary dashboard. Production dashboard is served by backend /dashboard-ui.
 
+Current production feature summary:
+
+- Backend is served by FastAPI through the `ITUAICCTVBackend` Windows service.
+- Primary production monitor is `ITU AI CCTV Live Monitor`.
+- Old batch monitor `ITU AI CCTV Person Monitor` is intentionally disabled and retained as backup.
+- Live monitor writes `backend/data/task-logs/live_monitor_status.json`.
+- `/dashboard/health` prefers the live monitor status JSON and falls back to the old `monitor_person_all.log`.
+- Evidence composites show the full frame with all detected person boxes plus up to three top-confidence person crops.
+- New event metadata is synced to rendered evidence crops through `person_detections` with `crop_rank`, `confidence`, and `bbox`.
+- Dashboard Assign Identity is available for unknown/unrecognized evidence events and supports person-specific targets for multi-person events.
+- Identity assignments persist locally under `backend/data/face-enrollment/identity-assignments/identity_assignments.json`.
+- Face Enrollment Manager is local-only and uses private CSV/OpenCV LBPH workflows. It does not use paid APIs, cloud recognition, or external image upload.
+- Assignment records are human review records only. They do not auto-train the face model.
+
 Documentation map:
 
 - Operations: docs/OPERATIONS.md

@@ -8,6 +8,8 @@
 - Backend service: `ITUAICCTVBackend`, running
 - Primary monitor task: `ITU AI CCTV Live Monitor`, running
 - Old monitor task: `ITU AI CCTV Person Monitor`, disabled and retained as backup
+- Live monitor status file: `backend/data/task-logs/live_monitor_status.json`
+- `/dashboard/health` prefers live monitor status and falls back to `backend/data/task-logs/monitor_person_all.log`
 - Camera inventory: 13 total, 12 enabled, 1 disabled/offline
 - Disabled/offline camera: `block_f_cam_8 / 192.168.40.20`
 
@@ -27,6 +29,16 @@ The configured interval is 10 seconds between scan cycles, but the real full-cyc
 
 HEVC/RTSP decoder warnings such as `Could not find ref with POC 34` can be harmless if monitoring continues and failed counts stay at 0. Investigate only if a camera freezes, repeated read failures appear, or failed counts increase.
 
+Dashboard health reads the lightweight live monitor status JSON first. The old batch monitor log is retained only as fallback because `ITU AI CCTV Person Monitor` is intentionally disabled backup.
+
+Optional future health alerts should be critical-only and cooldown protected, for example live monitor stopped, failed camera count above zero, or camera stale beyond threshold. Do not send normal health status repeatedly to Telegram.
+
+## Evidence And Identity Review
+
+New person evidence composites show the full frame with all detected person boxes plus up to three top-confidence person crops. New event metadata includes matching `person_detections` entries with `crop_rank`, `confidence`, and `bbox`; existing old events are not migrated.
+
+Dashboard Assign Identity is available for unknown/unrecognized evidence events. Single-person events use `PERSON 1`; multi-person events require the operator to choose `PERSON 1`, `PERSON 2`, or `PERSON 3` based on metadata. Assignments are stored locally as human review records and do not train the face model.
+
 ## Telegram Group Alerts
 
 Production Telegram group alerting has been verified for the internal `itunetmonitor` group.
@@ -45,6 +57,7 @@ The following are private runtime data and must not be committed:
 - event logs
 - event review JSON
 - face enrollment images
+- face enrollment CSVs and identity assignments
 - face embeddings
 - generated recognition models
 - service/task logs

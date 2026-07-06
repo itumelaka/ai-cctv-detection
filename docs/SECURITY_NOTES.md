@@ -8,6 +8,7 @@
 - Backend service ITUAICCTVBackend is Running and Automatic.
 - Primary live monitor task ITU AI CCTV Live Monitor is Running.
 - Old 5-minute ITU AI CCTV Person Monitor task is Disabled and retained as backup.
+- Live monitor status is stored in private runtime data at `backend/data/task-logs/live_monitor_status.json`.
 - Backend listens on port 8000.
 - Windows Firewall allows inbound TCP 8000 for dashboard/API.
 - UDM Pro allows server 192.168.1.254 to CCTV subnet 192.168.40.0/24 on TCP 554.
@@ -16,6 +17,9 @@
 - Telegram alerting can target a group by setting `TELEGRAM_CHAT_ID` in private `.env`. Production uses an internal Telegram group, but bot tokens and numeric chat IDs must not be committed.
 - Event review / acknowledgement is an internal local workflow only. There is no user login/authentication yet.
 - Face-recognition testing is approved internal use only. Do not commit private enrollment images, generated CCTV crops, embeddings, model files, or exact private source paths.
+- Face Enrollment Manager and Assign Identity are local-only. They do not use paid APIs, cloud recognition, or external staff/student image upload.
+- Identity assignment records are private runtime data under `backend/data/face-enrollment/identity-assignments/identity_assignments.json`.
+- Dashboard identity assignments are human review records only and do not auto-train the face model.
 - README is intentionally public-facing; detailed server operations, live-view, event-review, ignore-zone, and face-recognition notes are kept in focused docs.
 - Current camera inventory has 13 known cameras, 12 enabled cameras, and 1 disabled/offline camera. The mistaken 192.168.40.26 entry is not part of the current inventory.
 - Evidence share: \\192.168.1.254\ituaicctv-evidence
@@ -51,14 +55,17 @@ Do not commit:
 - Runtime service logs under backend/data/service-logs/
 - Evidence images under backend/data/evidence/
 - Face enrollment photos under backend/data/face-enrollment/
+- Identity assignment records under backend/data/face-enrollment/identity-assignments/
 - Face reference images under backend/data/face-reference/
 - Face embeddings or LBPH model files under backend/data/face-embeddings/
+- Staff/student CSVs or private enrollment spreadsheets
 - Local handoff notes
 - Any screenshot showing CCTV credentials
 - RTSP URLs that contain a username or password
 - Telegram bot tokens or chat IDs
 - CCTV passwords or credential-bearing connection strings
 - Face images, face crops, face embeddings, or personal identity data
+- OpenCV LBPH model or label files
 
 Use backend/.env.example for placeholders only.
 
@@ -103,6 +110,9 @@ Ignored paths:
 - backend/data/events.jsonl
 - backend/data/task-logs/
 - backend/data/evidence/
+- backend/data/logs/
+- backend/data/face-enrollment/
+- backend/data/face-embeddings/
 
 Evidence images may contain real CCTV footage. Handle them carefully:
 

@@ -10,13 +10,13 @@ Backend AI CCTV monitoring project for ITU Melaka using existing Hikvision CCTV 
 - Primary monitor: `ITU AI CCTV Live Monitor`
 - Old 5-minute monitor: `ITU AI CCTV Person Monitor`, retained as disabled backup
 - Camera inventory: 13 known cameras, 12 enabled, 1 disabled/offline
-- Event review, ignore-zone groundwork, Telegram group alerting, and Standard/HD live view are deployed.
+- Event review, ignore-zone groundwork, Telegram group alerting, Standard/HD live view, live monitor health, and local face enrollment tools are deployed.
 
 ## Key Features
 
 - RTSP camera access through the backend, without exposing CCTV credentials to browsers.
 - Near-live sequential person monitoring using YOLO.
-- Person evidence images with full-frame context and person crop.
+- Person evidence images with full-frame context, all detected person boxes, and up to three top-confidence person crops.
 - Telegram alerts for person detections.
 - Normal dashboard for operators and evidence review.
 - Fullscreen TV Command Center for wall display.
@@ -24,6 +24,7 @@ Backend AI CCTV monitoring project for ITU Melaka using existing Hikvision CCTV 
 - Per-camera confidence thresholds and disabled placeholder ignore-zone polygons for known static false positives.
 - Optional internal face-recognition foundation, privacy-gated and not identity proof.
 - Local-only Face Enrollment Manager for approved CSV/LBPH enrollment and reject reports.
+- Dashboard Assign Identity workflow for unknown/unrecognized evidence events, including person-specific targets for multi-person evidence.
 
 ## Dashboards
 
@@ -52,6 +53,7 @@ FastAPI backend on Windows Server
         +-- Telegram alert helper
         +-- Dashboard APIs and MJPEG proxy
         +-- Local event logs and review metadata
+        +-- Local-only face enrollment and identity assignment records
         |
         v
 Dashboard UI / TV Command Center / Telegram group
@@ -90,10 +92,12 @@ Backend-specific endpoint and runtime notes are in [backend/README.md](backend/R
 ## Security And Privacy
 
 - Evidence, event review data, face images, face embeddings, and recognition models are private runtime data and ignored by Git.
+- Face enrollment CSVs, face crops, identity assignments, and generated LBPH files are private runtime data and must not be committed.
 - Telegram bot tokens and numeric chat IDs must stay in private `.env` files.
 - CCTV credentials and RTSP URLs with credentials must never be committed.
 - Face recognition is optional, internal, privacy-gated, and not high-security identity proof.
 - `UNKNOWN` recognition means no reliable internal match; it does not mean suspicious.
+- Face Enrollment Manager and identity assignment are local-only. They do not use paid APIs, cloud recognition, or external image upload.
 
 ## License
 
